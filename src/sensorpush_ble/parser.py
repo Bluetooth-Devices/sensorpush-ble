@@ -78,6 +78,10 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         for match_name in LOCAL_NAMES:
             if match_name in local_name:
                 device_type = match_name
+        if not device_type:
+            return
+        self.set_device_type(device_type)
+        self.set_device_manufacturer("SensorPush")
 
         last_id = list(manufacturer_data)[-1]
         data = int(last_id).to_bytes(2, byteorder="little") + manufacturer_data[last_id]
@@ -88,13 +92,10 @@ class SensorPushBluetoothDeviceData(BluetoothData):
                 device_type = known_device_type
             result.update(decode_values(data, device_type_id))
 
-        if device_type:
-            self.set_device_manufacturer("SensorPush")
-            self.set_device_type(device_type)
-            if service_info.name.startswith("SensorPush "):
-                self.set_device_name(service_info.name[11:])
-            else:
-                self.set_device_name(service_info.name)
+        if service_info.name.startswith("SensorPush "):
+            self.set_device_name(service_info.name[11:])
+        else:
+            self.set_device_name(service_info.name)
 
         for data_type, value in result.items():
             self.update_predefined_sensor(data_type, value)
