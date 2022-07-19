@@ -70,6 +70,8 @@ class SensorPushBluetoothDeviceData(BluetoothData):
     def _start_update(self, service_info: BluetoothServiceInfo) -> None:
         """Update from BLE advertisement data."""
         manufacturer_data = service_info.manufacturer_data
+        if not manufacturer_data:
+            return
         local_name = service_info.name
         result = {}
         device_type = None
