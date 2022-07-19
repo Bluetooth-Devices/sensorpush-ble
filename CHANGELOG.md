@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.1 (2022-07-19)
+### Fix
+* Guard against invalid devices ([#7](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/7)) ([`4badaa0`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/4badaa0da1f782fc9ffd24eb608d085b0e6b9dd7))
+
 ## v1.2.0 (2022-07-19)
 ### Feature
 * Set manufacturer ([#6](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/6)) ([`0b823c2`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/0b823c28e391f5e89fa86b20822a822f2a67c5f7))
