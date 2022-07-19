@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.0 (2022-07-19)
+### Feature
+* Set manufacturer ([#6](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/6)) ([`0b823c2`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/0b823c28e391f5e89fa86b20822a822f2a67c5f7))
+
 ## v1.1.2 (2022-07-19)
 ### Fix
 * Add guard for missing manufacturer_data ([#5](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/5)) ([`a705260`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a70526016a43a6347bb1ac40b8aeb3b77e981fe3))
