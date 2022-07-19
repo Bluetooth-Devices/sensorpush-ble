@@ -89,6 +89,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             result.update(decode_values(data, device_type_id))
 
         if device_type:
+            self.set_device_manufacturer("SensorPush")
             self.set_device_type(device_type)
             if service_info.name.startswith("SensorPush "):
                 self.set_device_name(service_info.name[11:])
