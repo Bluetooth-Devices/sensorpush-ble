@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.2.2 (2022-07-20)
+### Fix
+* Bump deps ([#8](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/8)) ([`5b86419`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/5b86419ad62eb1d86c76cd0b4479adf866fa100d))
+
 ## v1.2.1 (2022-07-19)
 ### Fix
 * Guard against invalid devices ([#7](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/7)) ([`4badaa0`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/4badaa0da1f782fc9ffd24eb608d085b0e6b9dd7))
