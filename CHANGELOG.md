@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.0 (2022-07-20)
+### Feature
+* Export SensorDescription and SensorValue ([#9](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/9)) ([`ced7098`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/ced7098af4d6744c2edcc182bfe0f36fac250c5a))
+
 ## v1.2.2 (2022-07-20)
 ### Fix
 * Bump deps ([#8](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/8)) ([`5b86419`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/5b86419ad62eb1d86c76cd0b4479adf866fa100d))
