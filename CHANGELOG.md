@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.4.2 (2022-07-21)
+### Fix
+* Fix refactoring error in pressure ([#12](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/12)) ([`2db9381`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/2db93812d50b7af795dfb924a9d4d610f2488c2b))
+
 ## v1.4.1 (2022-07-21)
 ### Fix
 * Bump sensor-state-data ([#11](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/11)) ([`af06b0b`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/af06b0b7679a090ec2648dae2ecfaed58e6c5c06))
