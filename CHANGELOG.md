@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.4.0 (2022-07-21)
+### Feature
+* Refactor for sensor-state-data 2 ([#10](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/10)) ([`a723449`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a723449519d3a18aa0ac859570683c573ba1b371))
+
 ## v1.3.0 (2022-07-20)
 ### Feature
 * Export SensorDescription and SensorValue ([#9](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/9)) ([`ced7098`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/ced7098af4d6744c2edcc182bfe0f36fac250c5a))
