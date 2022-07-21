@@ -26,8 +26,12 @@ SENSORPUSH_PACK_PARAMS = {
 }
 
 SENSORPUSH_DATA_TYPES = {
-    64: [SensorLibrary.TEMPERATURE, SensorLibrary.HUMIDITY, SensorLibrary.PRESSURE],
-    65: [SensorLibrary.TEMPERATURE, SensorLibrary.HUMIDITY],
+    64: [
+        SensorLibrary.TEMPERATURE__CELSIUS,
+        SensorLibrary.HUMIDITY__PERCENTAGE,
+        SensorLibrary.PRESSURE__MBAR,
+    ],
+    65: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
 }
 
 
