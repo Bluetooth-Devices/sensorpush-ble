@@ -60,7 +60,7 @@ def decode_values(
         value_count = int((packed_values % mod) / div)
         data_type = SENSORPUSH_DATA_TYPES[device_type_id][i]
         value = round(value_count * step + min_value, 2)
-        if data_type == SensorLibrary.PRESSURE:
+        if data_type == SensorLibrary.PRESSURE__MBAR:
             value = value / 100.0
         values[data_type] = value
         div *= int((max_value - min_value) / step + step / 2.0) + 1
