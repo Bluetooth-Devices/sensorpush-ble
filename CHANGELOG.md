@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.4.1 (2022-07-21)
+### Fix
+* Bump sensor-state-data ([#11](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/11)) ([`af06b0b`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/af06b0b7679a090ec2648dae2ecfaed58e6c5c06))
+
 ## v1.4.0 (2022-07-21)
 ### Feature
 * Refactor for sensor-state-data 2 ([#10](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/10)) ([`a723449`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a723449519d3a18aa0ac859570683c573ba1b371))
