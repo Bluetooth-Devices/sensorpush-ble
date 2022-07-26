@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.0 (2022-07-26)
+### Feature
+* Add parser tests ([#13](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/13)) ([`90701be`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/90701be63e077ebc043868d35dfa596bef0a7042))
+
+### Fix
+* Ci fix ([#14](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/14)) ([`3bb525e`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/3bb525e2bd8420a6a30e8e0b0d18e43959f7a99d))
+
 ## v1.4.2 (2022-07-21)
 ### Fix
 * Fix refactoring error in pressure ([#12](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/12)) ([`2db9381`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/2db93812d50b7af795dfb924a9d4d610f2488c2b))
