@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.1 (2022-07-26)
+### Fix
+* Latest data was not always found if page0 was not last ([#15](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/15)) ([`a0e78c8`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a0e78c814e877810e481fc4ff3fc850d10a0162b))
+
 ## v1.5.0 (2022-07-26)
 ### Feature
 * Add parser tests ([#13](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/13)) ([`90701be`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/90701be63e077ebc043868d35dfa596bef0a7042))
