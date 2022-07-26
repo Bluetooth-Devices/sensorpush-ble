@@ -35,6 +35,15 @@ SENSORPUSH_DATA_TYPES = {
 }
 
 
+def _find_latest_data(manufacturer_data: dict[int, bytes]) -> bytes | None:
+    for id_ in reversed(list(manufacturer_data)):
+        data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
+        page_id = data[0] & 0x03
+        if page_id == 0:
+            return data
+    return None
+
+
 def decode_values(
     mfg_data: bytes, device_type_id: int
 ) -> dict[BaseSensorDescription, float]:
@@ -87,10 +96,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
-        last_id = list(manufacturer_data)[-1]
-        data = int(last_id).to_bytes(2, byteorder="little") + manufacturer_data[last_id]
-        page_id = data[0] & 0x03
-        if page_id == 0:
+        if data := _find_latest_data(manufacturer_data):
             device_type_id = 64 + (data[0] >> 2)
             if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
                 device_type = known_device_type
