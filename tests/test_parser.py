@@ -72,3 +72,63 @@ def test_ht_w():
             ),
         },
     )
+
+
+def test_ht_w_page_zero_data_first():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="SensorPush HT.w 0CA1",
+        manufacturer_data={29956: b"SdF", 11271: b"\xfe\x00\x01"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT.w 0CA1",
+                model="HT.w",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=DeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=DeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=DeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=44.73,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=20.48,
+            ),
+        },
+    )
