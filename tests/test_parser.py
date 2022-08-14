@@ -78,7 +78,7 @@ def test_ht_w_page_zero_data_first():
     parser = SensorPushBluetoothDeviceData()
     service_info = BluetoothServiceInfo(
         name="SensorPush HT.w 0CA1",
-        manufacturer_data={29956: b"SdF", 11271: b"\xfe\x00\x01"},
+        manufacturer_data={29956: b"SdF"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",

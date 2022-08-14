@@ -96,7 +96,9 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
-        if data := _find_latest_data(manufacturer_data):
+        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+
+        if data := _find_latest_data(changed_manufacturer_data):
             device_type_id = 64 + (data[0] >> 2)
             if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
                 device_type = known_device_type
