@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.2 (2022-08-14)
+### Fix
+* Use new changed_manufacturer_data helper from bluetooth-sensor-state-data ([#16](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/16)) ([`574210f`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/574210f800ca664121078cbf6f6dd63f3ee29747))
+
 ## v1.5.1 (2022-07-26)
 ### Fix
 * Latest data was not always found if page0 was not last ([#15](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/15)) ([`a0e78c8`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a0e78c814e877810e481fc4ff3fc850d10a0162b))
