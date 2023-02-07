@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.5 (2023-02-07)
+### Fix
+* Parsing with passive scans ([#19](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/19)) ([`adcafc8`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/adcafc8fb63ff6f7d04041f73aa9274d8bbc6a4c))
+
 ## v1.5.4 (2023-02-07)
 ### Fix
 * Account for switching adapter when finding changed_manufacturer_data ([#18](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/18)) ([`dcccd49`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/dcccd497987e0dea164fc2fbd196cd77fa9fe62e))
