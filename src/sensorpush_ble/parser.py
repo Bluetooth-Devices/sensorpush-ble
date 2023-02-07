@@ -97,6 +97,11 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         self.set_device_manufacturer("SensorPush")
 
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+        if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
+            # If len(changed_manufacturer_data) > 1 it means we switched
+            # ble adapters so we do not know which data is the latest
+            # and we need to wait for the next update.
+            return
 
         if data := _find_latest_data(changed_manufacturer_data):
             device_type_id = 64 + (data[0] >> 2)
