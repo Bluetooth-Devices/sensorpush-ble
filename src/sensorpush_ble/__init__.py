@@ -13,7 +13,7 @@ from sensor_state_data import (
 
 from .parser import SensorPushBluetoothDeviceData
 
-__version__ = "1.5.2"
+__version__ = "1.5.3"
 
 __all__ = [
     "SensorPushBluetoothDeviceData",
