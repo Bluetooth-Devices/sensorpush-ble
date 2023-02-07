@@ -96,10 +96,13 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         for match_name in LOCAL_NAMES:
             if match_name in local_name:
                 device_type = match_name
-        if not device_type and "ef090000-11d6-42ba-93b8-9dd7ec090ab0" in service_info.service_uuids:
-            first_manufacturer_data_value_len = len(next(
-                iter(manufacturer_data.values())
-            ))
+        if (
+            not device_type
+            and "ef090000-11d6-42ba-93b8-9dd7ec090ab0" in service_info.service_uuids
+        ):
+            first_manufacturer_data_value_len = len(
+                next(iter(manufacturer_data.values()))
+            )
             device_type = SENSORPUSH_MANUFACTURER_DATA_LEN.get(
                 first_manufacturer_data_value_len
             )
