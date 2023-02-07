@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.4 (2023-02-07)
+### Fix
+* Account for switching adapter when finding changed_manufacturer_data ([#18](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/18)) ([`dcccd49`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/dcccd497987e0dea164fc2fbd196cd77fa9fe62e))
+
 ## v1.5.3 (2023-02-07)
 ### Fix
 * Update isort to fix CI ([#17](https://github.com/Bluetooth-Devices/sensorpush-ble/issues/17)) ([`12bf0ac`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/12bf0acf35565c81d92852be512fde529ce99ce4))
