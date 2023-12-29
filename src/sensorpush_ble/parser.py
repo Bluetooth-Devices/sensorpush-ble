@@ -75,7 +75,7 @@ def temperature_celsius_from_raw_temperature(num: int) -> float:
 
 def decode_ht1_values(mfg_data: bytes) -> dict[BaseSensorDescription, float]:
     """Decode values for HT1."""
-    if mfg_data is None or len(mfg_data) == 0:
+    if not mfg_data:
         return {}
 
     device_type = (mfg_data[3] & 124) >> 2
