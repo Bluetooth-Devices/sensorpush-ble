@@ -629,6 +629,165 @@ HTPW_DETECT_CHANGE_2 = BluetoothServiceInfo(
     source="local",
 )
 
+HT1_DETECT_CHANGED_1 = BluetoothServiceInfo(
+    name="s",
+    manufacturer_data={
+        2061: b"b\x05",
+        76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba"
+        + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
+        2060: b"b\x05",
+        6156: b"b\x05",
+        2059: b"b\x05",
+        6155: b"b\x05",
+        6154: b"b\x05",
+        2058: b"b\x05",
+        2057: b"b\x05",
+        63498: b"a\x05",
+        63499: b"a\x05",
+        63500: b"a\x05",
+        63501: b"a\x05",
+        63502: b"a\x05",
+        59407: b"a\x05",
+        63503: b"a\x05",
+        63504: b"a\x05",
+        59409: b"a\x05",
+        59410: b"a\x05",
+        59411: b"a\x05",
+        59412: b"a\x05",
+        59413: b"a\x05",
+        59414: b"a\x05",
+        55319: b"a\x05",
+        55320: b"a\x05",
+        55321: b"a\x05",
+        55322: b"a\x05",
+        55323: b"a\x05",
+        55324: b"a\x05",
+        55325: b"a\x05",
+        51229: b"a\x05",
+        51230: b"a\x05",
+        51231: b"a\x05",
+        51232: b"a\x05",
+        51233: b"a\x05",
+        47138: b"a\x05",
+        47139: b"a\x05",
+        47140: b"a\x05",
+        47141: b"a\x05",
+        43045: b"a\x05",
+        43046: b"a\x05",
+        43047: b"a\x05",
+        43048: b"a\x05",
+        38952: b"a\x05",
+        43049: b"a\x05",
+        38954: b"a\x05",
+        43050: b"a\x05",
+        38955: b"a\x05",
+        38956: b"a\x05",
+        38957: b"a\x05",
+        38958: b"a\x05",
+        34863: b"a\x05",
+        34864: b"a\x05",
+        34865: b"a\x05",
+        34866: b"a\x05",
+        34867: b"a\x05",
+        30772: b"a\x05",
+        30773: b"a\x05",
+        30774: b"a\x05",
+        30775: b"a\x05",
+        30776: b"a\x05",
+        30777: b"a\x05",
+        26682: b"a\x05",
+        26683: b"a\x05",
+        26684: b"a\x05",
+        26685: b"a\x05",
+        26686: b"a\x05",
+    },
+    service_data={},
+    service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+    address="aa:bb:cc:dd:ee:ff",
+    rssi=-60,
+    source="local",
+)
+
+HT1_DETECT_CHANGED_2 = BluetoothServiceInfo(
+    name="s",
+    manufacturer_data={
+        2061: b"b\x05",
+        76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba"
+        + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
+        2060: b"b\x05",
+        6156: b"b\x05",
+        2059: b"b\x05",
+        6155: b"b\x05",
+        6154: b"b\x05",
+        2058: b"b\x05",
+        2057: b"b\x05",
+        63498: b"a\x05",
+        63499: b"a\x05",
+        63500: b"a\x05",
+        63501: b"a\x05",
+        63502: b"a\x05",
+        59407: b"a\x05",
+        63503: b"a\x05",
+        63504: b"a\x05",
+        59409: b"a\x05",
+        59410: b"a\x05",
+        59411: b"a\x05",
+        59412: b"a\x05",
+        59413: b"a\x05",
+        59414: b"a\x05",
+        55319: b"a\x05",
+        55320: b"a\x05",
+        55321: b"a\x05",
+        55322: b"a\x05",
+        55323: b"a\x05",
+        55324: b"a\x05",
+        55325: b"a\x05",
+        51229: b"a\x05",
+        51230: b"a\x05",
+        51231: b"a\x05",
+        51232: b"a\x05",
+        51233: b"a\x05",
+        47138: b"a\x05",
+        47139: b"a\x05",
+        47140: b"a\x05",
+        47141: b"a\x05",
+        43045: b"a\x05",
+        43046: b"a\x05",
+        43047: b"a\x05",
+        43048: b"a\x05",
+        38952: b"a\x05",
+        43049: b"a\x05",
+        38954: b"a\x05",
+        43050: b"a\x05",
+        38955: b"a\x05",
+        38956: b"a\x05",
+        38957: b"a\x05",
+        38958: b"a\x05",
+        34863: b"a\x05",
+        34864: b"a\x05",
+        34865: b"a\x05",
+        34866: b"a\x05",
+        34867: b"a\x05",
+        30772: b"a\x05",
+        30773: b"a\x05",
+        30774: b"a\x05",
+        30775: b"a\x05",
+        30776: b"a\x05",
+        30777: b"a\x05",
+        26682: b"a\x05",
+        26683: b"a\x05",
+        26684: b"a\x05",
+        26685: b"a\x05",
+        26686: b"a\x05",
+        26687: b"a\x05",
+    },
+    service_data={},
+    service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+    address="aa:bb:cc:dd:ee:ff",
+    rssi=-60,
+    source="local",
+)
+
 
 def test_can_create():
     SensorPushBluetoothDeviceData()
@@ -931,4 +1090,310 @@ def test_htp_w_large_data_set():
         binary_entity_descriptions={},
         binary_entity_values={},
         events={},
+    )
+
+
+def test_ht1():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="s",
+        manufacturer_data={18484: b"b\x05"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT1 EEFF",
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=SensorDeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=58.09,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=13.94,
+            ),
+        },
+    )
+
+
+def test_ht1_max_value():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="s",
+        manufacturer_data={65535: b"\xff\x07"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT1 EEFF",
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=SensorDeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=100.00,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=128.86,
+            ),
+        },
+    )
+
+
+def test_ht1_min_value():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="s",
+        manufacturer_data={0: b"\x00\x04"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT1 EEFF",
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=SensorDeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=0.00,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=-46.85,
+            ),
+        },
+    )
+
+
+def test_ht1_long_packet_empty():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="s",
+        manufacturer_data={
+            76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba\x93"
+            + b"\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8"
+        },
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT1 EEFF",
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+        },
+    )
+
+
+def test_ht1_large_data_set():
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(HT1_DETECT_CHANGED_1)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name=None,
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            )
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            )
+        },
+        binary_entity_descriptions={},
+        binary_entity_values={},
+        events={},
+    )
+
+    result2 = parser.update(HT1_DETECT_CHANGED_2)
+
+    assert result2 == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT1 EEFF",
+                model="HT1",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=SensorDeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=58.42,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=13.79,
+            ),
+        },
     )
