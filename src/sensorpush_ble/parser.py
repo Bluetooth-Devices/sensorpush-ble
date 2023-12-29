@@ -16,14 +16,14 @@ from sensor_state_data.description import BaseSensorDescription
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSORPUSH_DEVICE_TYPES = {64: "HTP.xw", 65: "HT.w"}
+SENSORPUSH_DEVICE_TYPES = {1: "HT1", 64: "HTP.xw", 65: "HT.w"}
 
 SENSORPUSH_MANUFACTURER_DATA_LEN = {
     3: "HT.w",
     5: "HTP.xw",
 }
 
-LOCAL_NAMES = ["HTP.xw", "HT.w"]
+LOCAL_NAMES = ["s", "HT1", "HTP.xw", "HT.w"]
 
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
@@ -31,6 +31,7 @@ SENSORPUSH_PACK_PARAMS = {
 }
 
 SENSORPUSH_DATA_TYPES = {
+    1: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
     64: [
         SensorLibrary.TEMPERATURE__CELSIUS,
         SensorLibrary.HUMIDITY__PERCENTAGE,
@@ -40,18 +41,61 @@ SENSORPUSH_DATA_TYPES = {
 }
 
 
-def _find_latest_data(manufacturer_data: dict[int, bytes]) -> bytes | None:
+def _find_latest_data(
+    manufacturer_data: dict[int, bytes], is_ht1: bool
+) -> bytes | None:
     for id_ in reversed(list(manufacturer_data)):
         data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
+        if is_ht1:
+            return data
+
         page_id = data[0] & 0x03
         if page_id == 0:
             return data
     return None
 
 
+def relative_humidity_from_raw_humidity(num: int) -> float:
+    int_value = (-6.0) + (125.0 * (num / (pow(2.0, 12.0))))
+    if int_value < 0.0:
+        int_value = 0.0
+
+    if int_value > 100.0:
+        return 100.0
+    return round(int_value, 2)
+
+
+def temperature_celsius_from_raw_temperature(num: int) -> float:
+    return round((-46.85) + (175.72 * (num / (pow(2.0, 14.0)))), 2)
+
+
 def decode_values(
     mfg_data: bytes, device_type_id: int
 ) -> dict[BaseSensorDescription, float]:
+    if device_type_id == 1:
+
+        if mfg_data is None or len(mfg_data) == 0:
+            return {}
+
+        device_type = (mfg_data[3] & 124) >> 2
+        if device_type != 1:
+            _LOGGER.debug("Unsupported device type: %s", device_type)
+            return {}
+
+        relative_humidity = relative_humidity_from_raw_humidity(
+            (mfg_data[0] & 255) + ((mfg_data[1] & 15) << 8)
+        )
+        temperature_celsius = temperature_celsius_from_raw_temperature(
+            ((mfg_data[1] & 255) >> 4)
+            + ((mfg_data[2] & 255) << 4)
+            + ((mfg_data[3] & 3) << 12)
+        )
+
+        return {
+            SensorLibrary.TEMPERATURE__CELSIUS: temperature_celsius,
+            SensorLibrary.HUMIDITY__PERCENTAGE: relative_humidity,
+        }
+
     """Decode values."""
     pack_params = SENSORPUSH_PACK_PARAMS.get(device_type_id, None)
     if pack_params is None:
@@ -93,19 +137,27 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         local_name = service_info.name
         result = {}
         device_type = None
-        for match_name in LOCAL_NAMES:
-            if match_name in local_name:
-                device_type = match_name
+        is_ht1 = False
+
         if (
-            not device_type
-            and "ef090000-11d6-42ba-93b8-9dd7ec090ab0" in service_info.service_uuids
+            local_name == "s"
+            and "ef090000-11d6-42ba-93b8-9dd7ec090aa9" in service_info.service_uuids
         ):
-            first_manufacturer_data_value_len = len(
-                next(iter(manufacturer_data.values()))
-            )
-            device_type = SENSORPUSH_MANUFACTURER_DATA_LEN.get(
-                first_manufacturer_data_value_len
-            )
+            device_type = "HT1"
+            is_ht1 = True
+        else:
+            for match_name in LOCAL_NAMES:
+                if match_name in local_name:
+                    device_type = match_name
+            if not device_type and (
+                "ef090000-11d6-42ba-93b8-9dd7ec090ab0" in service_info.service_uuids
+            ):
+                first_manufacturer_data_value_len = len(
+                    next(iter(manufacturer_data.values()))
+                )
+                device_type = SENSORPUSH_MANUFACTURER_DATA_LEN.get(
+                    first_manufacturer_data_value_len
+                )
         if not device_type:
             return
         self.set_device_type(device_type)
@@ -118,16 +170,19 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             # and we need to wait for the next update.
             return
 
-        if data := _find_latest_data(changed_manufacturer_data):
-            device_type_id = 64 + (data[0] >> 2)
+        if data := _find_latest_data(changed_manufacturer_data, is_ht1):
+            device_type_id = 1 if is_ht1 else 64 + (data[0] >> 2)
             if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
                 device_type = known_device_type
             result.update(decode_values(data, device_type_id))
 
-        if service_info.name.startswith("SensorPush "):
-            self.set_device_name(service_info.name[11:])
+        if is_ht1:
+            self.set_device_name(f"HT1 {service_info.address[12:].replace(':', '')}")
         else:
-            self.set_device_name(service_info.name)
+            if service_info.name.startswith("SensorPush "):
+                self.set_device_name(service_info.name[11:])
+            else:
+                self.set_device_name(service_info.name)
 
         for data_type, value in result.items():
             self.update_predefined_sensor(data_type, value)
