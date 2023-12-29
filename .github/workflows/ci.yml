@@ -62,6 +62,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
+    concurrency: release
+    permissions:
+      id-token: write
+      contents: write
     if: github.ref == 'refs/heads/main'
     needs:
       - test
