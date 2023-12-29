@@ -136,8 +136,8 @@ def decode_values(
 
 
 def determine_device_type(
-    service_info: BluetoothServiceInfo,manufacturer_data: dict[int, bytes]
-) -> str:
+    service_info: BluetoothServiceInfo, manufacturer_data: dict[int, bytes]
+) -> str | None:
     """Determine the device type based on the name and UUID"""
     local_name = service_info.name
 
@@ -149,7 +149,7 @@ def determine_device_type(
         if match_name in local_name:
             device_type = match_name
 
-    if not device_type and (SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids):
+    if not device_type and SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids:
         first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
         return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
 
