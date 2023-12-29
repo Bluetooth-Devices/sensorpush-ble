@@ -634,7 +634,7 @@ HT1_DETECT_CHANGED_1 = BluetoothServiceInfo(
     manufacturer_data={
         2061: b"b\x05",
         76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba"
-            + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
+        + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
         2060: b"b\x05",
         6156: b"b\x05",
         2059: b"b\x05",
@@ -713,7 +713,7 @@ HT1_DETECT_CHANGED_2 = BluetoothServiceInfo(
     manufacturer_data={
         2061: b"b\x05",
         76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba"
-            + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
+        + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8",
         2060: b"b\x05",
         6156: b"b\x05",
         2059: b"b\x05",
@@ -1157,8 +1157,10 @@ def test_ht1_long_packet_empty():
     parser = SensorPushBluetoothDeviceData()
     service_info = BluetoothServiceInfo(
         name="s",
-        manufacturer_data={76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba\x93"
-                               + b"\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8"},
+        manufacturer_data={
+            76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba\x93"
+            + b"\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8"
+        },
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
         address="aa:bb:cc:dd:ee:ff",

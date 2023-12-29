@@ -25,6 +25,9 @@ SENSORPUSH_MANUFACTURER_DATA_LEN = {
 
 LOCAL_NAMES = ["s", "HT1", "HTP.xw", "HT.w"]
 
+SENSORPUSH_UUID = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
+SENSORPUSH_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
+
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
     65: [[-40.0, 125.0, 0.0025], [0.0, 100.0, 0.0025]],
@@ -69,34 +72,41 @@ def temperature_celsius_from_raw_temperature(num: int) -> float:
     return round((-46.85) + (175.72 * (num / (pow(2.0, 14.0)))), 2)
 
 
+def decode_ht1_values(
+    mfg_data: bytes
+) -> dict[BaseSensorDescription, float]:
+    """Decode values for HT1."""
+    if mfg_data is None or len(mfg_data) == 0:
+        return {}
+
+    device_type = (mfg_data[3] & 124) >> 2
+    if device_type != 1:
+        _LOGGER.debug("Unsupported device type: %s", device_type)
+        return {}
+
+    relative_humidity = relative_humidity_from_raw_humidity(
+        (mfg_data[0] & 255) + ((mfg_data[1] & 15) << 8)
+    )
+    temperature_celsius = temperature_celsius_from_raw_temperature(
+        ((mfg_data[1] & 255) >> 4)
+        + ((mfg_data[2] & 255) << 4)
+        + ((mfg_data[3] & 3) << 12)
+    )
+
+    return {
+        SensorLibrary.TEMPERATURE__CELSIUS: temperature_celsius,
+        SensorLibrary.HUMIDITY__PERCENTAGE: relative_humidity,
+    }
+
+
 def decode_values(
     mfg_data: bytes, device_type_id: int
 ) -> dict[BaseSensorDescription, float]:
-    if device_type_id == 1:
-
-        if mfg_data is None or len(mfg_data) == 0:
-            return {}
-
-        device_type = (mfg_data[3] & 124) >> 2
-        if device_type != 1:
-            _LOGGER.debug("Unsupported device type: %s", device_type)
-            return {}
-
-        relative_humidity = relative_humidity_from_raw_humidity(
-            (mfg_data[0] & 255) + ((mfg_data[1] & 15) << 8)
-        )
-        temperature_celsius = temperature_celsius_from_raw_temperature(
-            ((mfg_data[1] & 255) >> 4)
-            + ((mfg_data[2] & 255) << 4)
-            + ((mfg_data[3] & 3) << 12)
-        )
-
-        return {
-            SensorLibrary.TEMPERATURE__CELSIUS: temperature_celsius,
-            SensorLibrary.HUMIDITY__PERCENTAGE: relative_humidity,
-        }
-
     """Decode values."""
+
+    if device_type_id == 1:
+        return decode_ht1_values(mfg_data)
+
     pack_params = SENSORPUSH_PACK_PARAMS.get(device_type_id, None)
     if pack_params is None:
         _LOGGER.error("SensorPush device type id %s unknown", device_type_id)
@@ -141,7 +151,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
 
         if (
             local_name == "s"
-            and "ef090000-11d6-42ba-93b8-9dd7ec090aa9" in service_info.service_uuids
+            and SENSORPUSH_UUID in service_info.service_uuids
         ):
             device_type = "HT1"
             is_ht1 = True
@@ -150,7 +160,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
                 if match_name in local_name:
                     device_type = match_name
             if not device_type and (
-                "ef090000-11d6-42ba-93b8-9dd7ec090ab0" in service_info.service_uuids
+                SENSORPUSH_UUID_V2 in service_info.service_uuids
             ):
                 first_manufacturer_data_value_len = len(
                     next(iter(manufacturer_data.values()))
