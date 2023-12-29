@@ -13,6 +13,7 @@ from bluetooth_sensor_state_data import BluetoothData
 from home_assistant_bluetooth import BluetoothServiceInfo
 from sensor_state_data import SensorLibrary
 from sensor_state_data.description import BaseSensorDescription
+from bluetooth_data_tools import short_address
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,8 +26,8 @@ SENSORPUSH_MANUFACTURER_DATA_LEN = {
 
 LOCAL_NAMES = ["s", "HT1", "HTP.xw", "HT.w"]
 
-SENSORPUSH_UUID = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
-SENSORPUSH_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
+SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
+SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
 
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
@@ -134,6 +135,31 @@ def decode_values(
     return values
 
 
+def determine_device_type(
+    service_info: BluetoothServiceInfo,
+    manufacturer_data: dict[int, bytes]
+) -> str:
+    """Determine the device type based on the name and UUID"""
+    device_type = None
+    local_name = service_info.name
+
+    if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
+        return "HT1"
+
+    for match_name in LOCAL_NAMES:
+        if match_name in local_name:
+            return match_name
+
+    if not device_type and (SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids):
+        first_manufacturer_data_value_len = len(
+            next(iter(manufacturer_data.values()))
+        )
+        return SENSORPUSH_MANUFACTURER_DATA_LEN.get(
+            first_manufacturer_data_value_len
+        )
+
+    return ""
+
 class SensorPushBluetoothDeviceData(BluetoothData):
     """Date update for SensorPush Bluetooth devices."""
 
@@ -142,27 +168,14 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         manufacturer_data = service_info.manufacturer_data
         if not manufacturer_data:
             return
-        local_name = service_info.name
-        result = {}
-        device_type = None
-        is_ht1 = False
 
-        if local_name == "s" and SENSORPUSH_UUID in service_info.service_uuids:
-            device_type = "HT1"
-            is_ht1 = True
-        else:
-            for match_name in LOCAL_NAMES:
-                if match_name in local_name:
-                    device_type = match_name
-            if not device_type and (SENSORPUSH_UUID_V2 in service_info.service_uuids):
-                first_manufacturer_data_value_len = len(
-                    next(iter(manufacturer_data.values()))
-                )
-                device_type = SENSORPUSH_MANUFACTURER_DATA_LEN.get(
-                    first_manufacturer_data_value_len
-                )
+        result = {}
+        device_type = determine_device_type(service_info, manufacturer_data)
         if not device_type:
             return
+
+        is_ht1 = device_type == "HT1"
+
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
@@ -180,7 +193,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             result.update(decode_values(data, device_type_id))
 
         if is_ht1:
-            self.set_device_name(f"HT1 {service_info.address[12:].replace(':', '')}")
+            self.set_device_name(f"HT1 {short_address(service_info.address)}")
         else:
             if service_info.name.startswith("SensorPush "):
                 self.set_device_name(service_info.name[11:])
