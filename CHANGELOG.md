@@ -2,6 +2,13 @@
 
 
 
+## v1.6.1 (2023-12-29)
+
+### Fix
+
+* fix: release permissions (#22) ([`98b27d0`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/98b27d0c2b0104ed36d47d3ad59e81911429c5e6))
+
+
 ## v1.6.0 (2023-12-29)
 
 ### Chore
