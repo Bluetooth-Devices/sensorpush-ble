@@ -72,9 +72,7 @@ def temperature_celsius_from_raw_temperature(num: int) -> float:
     return round((-46.85) + (175.72 * (num / (pow(2.0, 14.0)))), 2)
 
 
-def decode_ht1_values(
-    mfg_data: bytes
-) -> dict[BaseSensorDescription, float]:
+def decode_ht1_values(mfg_data: bytes) -> dict[BaseSensorDescription, float]:
     """Decode values for HT1."""
     if mfg_data is None or len(mfg_data) == 0:
         return {}
@@ -149,19 +147,14 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         device_type = None
         is_ht1 = False
 
-        if (
-            local_name == "s"
-            and SENSORPUSH_UUID in service_info.service_uuids
-        ):
+        if local_name == "s" and SENSORPUSH_UUID in service_info.service_uuids:
             device_type = "HT1"
             is_ht1 = True
         else:
             for match_name in LOCAL_NAMES:
                 if match_name in local_name:
                     device_type = match_name
-            if not device_type and (
-                SENSORPUSH_UUID_V2 in service_info.service_uuids
-            ):
+            if not device_type and (SENSORPUSH_UUID_V2 in service_info.service_uuids):
                 first_manufacturer_data_value_len = len(
                     next(iter(manufacturer_data.values()))
                 )
