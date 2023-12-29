@@ -1109,7 +1109,7 @@ def test_ht1():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="HT1 eeff",
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1169,7 +1169,7 @@ def test_ht1_max_value():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="HT1 eeff",
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1229,7 +1229,7 @@ def test_ht1_min_value():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="HT1 eeff",
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1292,7 +1292,7 @@ def test_ht1_long_packet_empty():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="HT1 eeff",
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1355,7 +1355,7 @@ def test_ht1_large_data_set():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="HT1 eeff",
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,

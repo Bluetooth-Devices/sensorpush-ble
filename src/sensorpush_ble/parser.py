@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import logging
 
+from bluetooth_data_tools import short_address
 from bluetooth_sensor_state_data import BluetoothData
 from home_assistant_bluetooth import BluetoothServiceInfo
 from sensor_state_data import SensorLibrary
 from sensor_state_data.description import BaseSensorDescription
-from bluetooth_data_tools import short_address
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -136,29 +136,25 @@ def decode_values(
 
 
 def determine_device_type(
-    service_info: BluetoothServiceInfo,
-    manufacturer_data: dict[int, bytes]
+    service_info: BluetoothServiceInfo,manufacturer_data: dict[int, bytes]
 ) -> str:
     """Determine the device type based on the name and UUID"""
-    device_type = None
     local_name = service_info.name
 
     if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
         return "HT1"
 
+    device_type = None
     for match_name in LOCAL_NAMES:
         if match_name in local_name:
-            return match_name
+            device_type = match_name
 
     if not device_type and (SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids):
-        first_manufacturer_data_value_len = len(
-            next(iter(manufacturer_data.values()))
-        )
-        return SENSORPUSH_MANUFACTURER_DATA_LEN.get(
-            first_manufacturer_data_value_len
-        )
+        first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
+        return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
 
-    return ""
+    return device_type
+
 
 class SensorPushBluetoothDeviceData(BluetoothData):
     """Date update for SensorPush Bluetooth devices."""
