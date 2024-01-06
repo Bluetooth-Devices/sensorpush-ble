@@ -181,7 +181,6 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
 
-
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
         if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
             # If len(changed_manufacturer_data) > 1 it means we switched
