@@ -2,6 +2,13 @@
 
 
 
+## v1.6.2 (2024-01-06)
+
+### Fix
+
+* fix: missing name (#23) ([`c532926`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/c5329265e3d753efb27f92e65da6d94148b817d4))
+
+
 ## v1.6.1 (2023-12-29)
 
 ### Fix
