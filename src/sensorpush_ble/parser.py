@@ -175,6 +175,12 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
+        name = service_info.name.removeprefix("SensorPush ")
+        # The name of the HT1s seems to always be "s"
+        if not name or is_ht1:
+            name = f"{device_type} {short_address(service_info.address)}"
+        self.set_device_name(name)
+
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
         if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
             # If len(changed_manufacturer_data) > 1 it means we switched
@@ -187,14 +193,6 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
                 device_type = known_device_type
             result.update(decode_values(data, device_type_id))
-
-        if is_ht1:
-            self.set_device_name(f"HT1 {short_address(service_info.address)}")
-        else:
-            if service_info.name.startswith("SensorPush "):
-                self.set_device_name(service_info.name[11:])
-            else:
-                self.set_device_name(service_info.name)
 
         for data_type, value in result.items():
             self.update_predefined_sensor(data_type, value)

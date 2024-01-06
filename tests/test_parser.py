@@ -920,7 +920,7 @@ def test_ht_w_large_data_set():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name=None,
+                name="HT.w EEFF",
                 model="HT.w",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -952,7 +952,7 @@ def test_ht_w_large_data_set():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="",
+                name="HT.w EEFF",
                 model="HT.w",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1006,7 +1006,7 @@ def test_htp_w_large_data_set():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name=None,
+                name="HTP.xw EEFF",
                 model="HTP.xw",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1036,7 +1036,7 @@ def test_htp_w_large_data_set():
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name="",
+                name="HTP.xw EEFF",
                 model="HTP.xw",
                 manufacturer="SensorPush",
                 sw_version=None,
@@ -1319,11 +1319,12 @@ def test_ht1_long_packet_empty():
 def test_ht1_large_data_set():
     parser = SensorPushBluetoothDeviceData()
     result = parser.update(HT1_DETECT_CHANGED_1)
+    assert parser.supported(HT1_DETECT_CHANGED_1) is True
     assert result == SensorUpdate(
         title=None,
         devices={
             None: SensorDeviceInfo(
-                name=None,
+                name="HT1 EEFF",
                 model="HT1",
                 manufacturer="SensorPush",
                 sw_version=None,
