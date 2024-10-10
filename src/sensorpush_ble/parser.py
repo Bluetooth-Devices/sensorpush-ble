@@ -18,14 +18,15 @@ from sensor_state_data.description import BaseSensorDescription
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSORPUSH_DEVICE_TYPES = {1: "HT1", 64: "HTP.xw", 65: "HT.w"}
+SENSORPUSH_DEVICE_TYPES = {1: "HT1", 64: "HTP.xw", 65: "HT.w", 66: "TC.x"}
 
 SENSORPUSH_MANUFACTURER_DATA_LEN = {
     3: "HT.w",
     5: "HTP.xw",
+    2: "TC.x",
 }
 
-LOCAL_NAMES = ["HTP.xw", "HT.w"]
+LOCAL_NAMES = ["HTP.xw", "HT.w", "TC.x"]
 
 SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
 SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
@@ -33,6 +34,7 @@ SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
     65: [[-40.0, 125.0, 0.0025], [0.0, 100.0, 0.0025]],
+    66: [[-200.0, 1800.0, 0.0625]],
 }
 
 SENSORPUSH_DATA_TYPES = {
@@ -43,6 +45,7 @@ SENSORPUSH_DATA_TYPES = {
         SensorLibrary.PRESSURE__MBAR,
     ],
     65: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
+    66: [SensorLibrary.TEMPERATURE__CELSIUS],
 }
 
 
