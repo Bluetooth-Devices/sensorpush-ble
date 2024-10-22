@@ -1399,11 +1399,12 @@ def test_ht1_large_data_set():
         },
     )
 
+
 def test_tcx():
     parser = SensorPushBluetoothDeviceData()
     service_info = BluetoothServiceInfo(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={63752: b'\r\x00\x00'},
+        manufacturer_data={63752: b"\r\x00\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1447,13 +1448,13 @@ def test_tcx():
             ),
         },
     )
-    
-    
+
+
 def test_tcx_overwriting_mfr_data():
     parser = SensorPushBluetoothDeviceData()
     service_info = BluetoothServiceInfo(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b'\r\x00\x00'},
+        manufacturer_data={59400: b"\r\x00\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1497,10 +1498,10 @@ def test_tcx_overwriting_mfr_data():
             ),
         },
     )
-    
+
     service_info_2 = BluetoothServiceInfo(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b'\r\x00\x00',63752: b'\r\x03\x00'},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x03\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1544,10 +1545,10 @@ def test_tcx_overwriting_mfr_data():
             ),
         },
     )
-    
+
     service_info_3 = BluetoothServiceInfo(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b'\r\x00\x00', 63752: b'\r\x01\x00'},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x01\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1591,10 +1592,10 @@ def test_tcx_overwriting_mfr_data():
             ),
         },
     )
-    
+
     service_info_3 = BluetoothServiceInfo(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b'\r\x00\x00', 63752: b'\r\x02\x00'},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x02\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
