@@ -1398,3 +1398,244 @@ def test_ht1_large_data_set():
             ),
         },
     )
+
+
+def test_tcx():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="SensorPush TC.x EEFF",
+        manufacturer_data={63752: b"\r\x00\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="TC.x EEFF",
+                model="TC.x",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=23.56,
+            ),
+        },
+    )
+
+
+def test_tcx_overwriting_mfr_data():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="SensorPush TC.x EEFF",
+        manufacturer_data={59400: b"\r\x00\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="TC.x EEFF",
+                model="TC.x",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=22.5,
+            ),
+        },
+    )
+
+    service_info_2 = BluetoothServiceInfo(
+        name="SensorPush TC.x EEFF",
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x03\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result_2 = parser.update(service_info_2)
+    assert result_2 == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="TC.x EEFF",
+                model="TC.x",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=311.19,
+            ),
+        },
+    )
+
+    service_info_3 = BluetoothServiceInfo(
+        name="SensorPush TC.x EEFF",
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x01\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result_3 = parser.update(service_info_3)
+    assert result_3 == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="TC.x EEFF",
+                model="TC.x",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=119.44,
+            ),
+        },
+    )
+
+    service_info_3 = BluetoothServiceInfo(
+        name="SensorPush TC.x EEFF",
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x02\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result_3 = parser.update(service_info_3)
+    assert result_3 == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="TC.x EEFF",
+                model="TC.x",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=SensorDeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=215.31,
+            ),
+        },
+    )
