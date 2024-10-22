@@ -2,6 +2,44 @@
 
 
 
+## v1.7.0 (2024-10-22)
+
+### Chore
+
+* chore(pre-commit.ci): pre-commit autoupdate (#31) ([`37b7c3e`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/37b7c3eac03ec38842794132c5f67c7c01362514))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#30)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`9a9af04`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/9a9af049cdc92723775553da9aebcedf52106d60))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#29)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`cb073f5`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/cb073f5c7f2c99bdaca46f9b7387c9c425845627))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#27)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`8e207f7`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/8e207f724026e471b597e41a747ece4d9f86a09e))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#26)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`4c035f5`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/4c035f5b61c7f7e9564ec72017397c0946a96c78))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#25)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`a307e01`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a307e011684400dfbf07a082d35b3863b10edf07))
+
+* chore(pre-commit.ci): pre-commit autoupdate (#24)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`b1d79b0`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/b1d79b0bec58d00ef839dbdd1d04978217516fa3))
+
+### Feature
+
+* feat: add support for TC.x (#33)
+
+Co-authored-by: James Nick Sears &lt;nick@cousins-sears.com&gt;
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`3279892`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/3279892b051558341776b4b11a535ad038b352c4))
+
+
 ## v1.6.2 (2024-01-06)
 
 ### Fix
