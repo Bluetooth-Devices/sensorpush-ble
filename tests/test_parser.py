@@ -1,3 +1,4 @@
+import pytest
 from bluetooth_sensor_state_data import BluetoothServiceInfo, DeviceClass, SensorUpdate
 from sensor_state_data import (
     DeviceKey,
@@ -1639,3 +1640,19 @@ def test_tcx_overwriting_mfr_data():
             ),
         },
     )
+
+
+def test_tcx_passive_scans():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = BluetoothServiceInfo(
+        name="aa:bb:cc:dd:ee:ff",
+        manufacturer_data={36619: b"\xe4\x02\x81", 8: b"\x00\x00\x00"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+    result = parser.update(service_info)
+    pytest.xfail("Currently detected as HT.w")
+    assert result.devices[None].model == "TC.x"
