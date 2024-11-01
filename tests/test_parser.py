@@ -1642,7 +1642,6 @@ def test_tcx_overwriting_mfr_data():
     )
 
 
-
 def test_tc_detection_active_scans():
     parser = SensorPushBluetoothDeviceData()
     service_info = BluetoothServiceInfo(
