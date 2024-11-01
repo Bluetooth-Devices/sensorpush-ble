@@ -2,6 +2,23 @@
 
 
 
+## v1.7.1 (2024-11-01)
+
+### Chore
+
+* chore(pre-commit.ci): pre-commit autoupdate (#35)
+
+Co-authored-by: pre-commit-ci[bot] &lt;66853113+pre-commit-ci[bot]@users.noreply.github.com&gt; ([`d65b5ab`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/d65b5ab9ffa8a91d7f6bb5a5df73bff07b3aa4ab))
+
+### Fix
+
+* fix: model TC.x being detected as HT.w with active scans (#37) ([`a04e13c`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/a04e13cec97a0c905c6cd2a0f2f38e462af17974))
+
+### Unknown
+
+* Remove FUNDING.yml (#34) ([`abf474e`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/abf474eb3d8df60bac5fe59b5f40cdc089bd6ee7))
+
+
 ## v1.7.0 (2024-10-22)
 
 ### Chore
