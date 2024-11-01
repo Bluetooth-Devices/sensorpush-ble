@@ -1758,4 +1758,4 @@ def test_tcx_passive_scans():
     )
     result = parser.update(service_info)
     pytest.xfail("Currently detected as HT.w")
-    assert result.devices[None].model == "TC.x" 
+    assert result.devices[None].model == "TC.x"
