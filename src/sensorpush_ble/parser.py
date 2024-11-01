@@ -26,7 +26,12 @@ SENSORPUSH_MANUFACTURER_DATA_LEN = {
     2: "TC.x",
 }
 
-LOCAL_NAMES = ["HTP.xw", "HT.w", "TC.x"]
+LOCAL_NAMES = {
+    "HTP.xw": "HTP.xw",
+    "HT.w": "HT.w",
+    "TC": "TC.x",
+    "TC.x": "TC.x",
+}
 
 SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
 SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
@@ -148,10 +153,10 @@ def determine_device_type(
     if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
         return "HT1"
 
-    device_type = None
-    for match_name in LOCAL_NAMES:
+    device_type: str | None = None
+    for match_name, model_name in LOCAL_NAMES.items():
         if match_name in local_name:
-            device_type = match_name
+            device_type = model_name
 
     if not device_type and SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids:
         first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
