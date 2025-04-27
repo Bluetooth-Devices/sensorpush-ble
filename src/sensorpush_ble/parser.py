@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import logging
 
-from bluetooth_data_tools import short_address
+from bluetooth_data_tools import parse_advertisement_data_bytes, short_address
 from bluetooth_sensor_state_data import BluetoothData
-from home_assistant_bluetooth import BluetoothServiceInfo
+from habluetooth import BluetoothServiceInfoBleak
 from sensor_state_data import SensorLibrary
 from sensor_state_data.description import BaseSensorDescription
 
@@ -145,7 +145,7 @@ def decode_values(
 
 
 def determine_device_type(
-    service_info: BluetoothServiceInfo, manufacturer_data: dict[int, bytes]
+    service_info: BluetoothServiceInfoBleak, manufacturer_data: dict[int, bytes]
 ) -> str | None:
     """Determine the device type based on the name and UUID"""
     local_name = service_info.name
@@ -168,7 +168,7 @@ def determine_device_type(
 class SensorPushBluetoothDeviceData(BluetoothData):
     """Date update for SensorPush Bluetooth devices."""
 
-    def _start_update(self, service_info: BluetoothServiceInfo) -> None:
+    def _start_update(self, service_info: BluetoothServiceInfoBleak) -> None:
         """Update from BLE advertisement data."""
         manufacturer_data = service_info.manufacturer_data
         if not manufacturer_data:
@@ -190,7 +190,14 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
 
-        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+        if service_info.raw:
+            # If we have the raw data we don't need to work out
+            # which one is the newest.
+            _, _, _, changed_manufacturer_data, _ = parse_advertisement_data_bytes(
+                service_info.raw
+            )
+        else:
+            changed_manufacturer_data = self.changed_manufacturer_data(service_info)
         if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
             # If len(changed_manufacturer_data) > 1 it means we switched
             # ble adapters so we do not know which data is the latest
