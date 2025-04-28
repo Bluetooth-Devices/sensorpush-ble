@@ -1,4 +1,9 @@
-from bluetooth_sensor_state_data import BluetoothServiceInfo, DeviceClass, SensorUpdate
+from uuid import UUID
+
+from bleak.backends.device import BLEDevice
+from bluetooth_data_tools import monotonic_time_coarse
+from bluetooth_sensor_state_data import DeviceClass, SensorUpdate
+from habluetooth import BluetoothServiceInfoBleak
 from sensor_state_data import (
     DeviceKey,
     SensorDescription,
@@ -10,7 +15,41 @@ from sensor_state_data import (
 
 from sensorpush_ble.parser import SensorPushBluetoothDeviceData
 
-HTW_DETECT_CHANGED_1 = BluetoothServiceInfo(
+
+def make_bluetooth_service_info(  # noqa: PLR0913
+    name: str,
+    manufacturer_data: dict[int, bytes],
+    service_uuids: list[str],
+    address: str,
+    rssi: int,
+    service_data: dict[UUID, bytes],
+    source: str,
+    tx_power: int = 0,
+    raw: bytes | None = None,
+) -> BluetoothServiceInfoBleak:
+    return BluetoothServiceInfoBleak(
+        name=name,
+        manufacturer_data=manufacturer_data,
+        service_uuids=service_uuids,
+        address=address,
+        rssi=rssi,
+        service_data=service_data,
+        source=source,
+        device=BLEDevice(
+            name=name,
+            address=address,
+            details={},
+            rssi=rssi,
+        ),
+        time=monotonic_time_coarse(),
+        advertisement=None,
+        connectable=True,
+        tx_power=tx_power,
+        raw=raw,
+    )
+
+
+HTW_DETECT_CHANGED_1 = make_bluetooth_service_info(
     name="",
     manufacturer_data={
         28932: b"\x03\xe0G",
@@ -52,7 +91,7 @@ HTW_DETECT_CHANGED_1 = BluetoothServiceInfo(
     source="local",
 )
 
-HTW_DETECT_CHANGED_2 = BluetoothServiceInfo(
+HTW_DETECT_CHANGED_2 = make_bluetooth_service_info(
     name="",
     manufacturer_data={
         28932: b"\x03\xe0G",
@@ -95,7 +134,7 @@ HTW_DETECT_CHANGED_2 = BluetoothServiceInfo(
     source="local",
 )
 
-HTPW_DETECT_CHANGE_1 = BluetoothServiceInfo(
+HTPW_DETECT_CHANGE_1 = make_bluetooth_service_info(
     name="",
     rssi=-60,
     manufacturer_data={
@@ -361,7 +400,7 @@ HTPW_DETECT_CHANGE_1 = BluetoothServiceInfo(
     service_data={},
     source="local",
 )
-HTPW_DETECT_CHANGE_2 = BluetoothServiceInfo(
+HTPW_DETECT_CHANGE_2 = make_bluetooth_service_info(
     name="",
     rssi=-60,
     manufacturer_data={
@@ -629,7 +668,7 @@ HTPW_DETECT_CHANGE_2 = BluetoothServiceInfo(
     source="local",
 )
 
-HT1_DETECT_CHANGED_1 = BluetoothServiceInfo(
+HT1_DETECT_CHANGED_1 = make_bluetooth_service_info(
     name="s",
     manufacturer_data={
         2061: b"b\x05",
@@ -708,7 +747,7 @@ HT1_DETECT_CHANGED_1 = BluetoothServiceInfo(
     source="local",
 )
 
-HT1_DETECT_CHANGED_2 = BluetoothServiceInfo(
+HT1_DETECT_CHANGED_2 = make_bluetooth_service_info(
     name="s",
     manufacturer_data={
         2061: b"b\x05",
@@ -795,7 +834,7 @@ def test_can_create():
 
 def test_ht_w():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush HT.w 0CA1",
         manufacturer_data={39428: b"\xc9\xa5F"},
         service_data={},
@@ -853,9 +892,70 @@ def test_ht_w():
     )
 
 
+def test_ht_w_raw():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_bluetooth_service_info(
+        name="SensorPush HT.w 0CA1",
+        manufacturer_data={1: b""},  # anything here
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+        raw=b"\x06\xff\x04\x9a\xc9\xa5\x46",
+    )
+    result = parser.update(service_info)
+    assert result == SensorUpdate(
+        title=None,
+        devices={
+            None: SensorDeviceInfo(
+                name="HT.w 0CA1",
+                model="HT.w",
+                manufacturer="SensorPush",
+                sw_version=None,
+                hw_version=None,
+            )
+        },
+        entity_descriptions={
+            DeviceKey(key="temperature", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                device_class=DeviceClass.TEMPERATURE,
+                native_unit_of_measurement=Units.TEMP_CELSIUS,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                device_class=DeviceClass.SIGNAL_STRENGTH,
+                native_unit_of_measurement=Units.SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorDescription(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                device_class=DeviceClass.HUMIDITY,
+                native_unit_of_measurement=Units.PERCENTAGE,
+            ),
+        },
+        entity_values={
+            DeviceKey(key="temperature", device_id=None): SensorValue(
+                device_key=DeviceKey(key="temperature", device_id=None),
+                name="Temperature",
+                native_value=20.53,
+            ),
+            DeviceKey(key="signal_strength", device_id=None): SensorValue(
+                device_key=DeviceKey(key="signal_strength", device_id=None),
+                name="Signal " "Strength",
+                native_value=-60,
+            ),
+            DeviceKey(key="humidity", device_id=None): SensorValue(
+                device_key=DeviceKey(key="humidity", device_id=None),
+                name="Humidity",
+                native_value=44.9,
+            ),
+        },
+    )
+
+
 def test_ht_w_page_zero_data_first():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush HT.w 0CA1",
         manufacturer_data={29956: b"SdF"},
         service_data={},
@@ -1095,7 +1195,7 @@ def test_htp_w_large_data_set():
 
 def test_ht1():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="s",
         manufacturer_data={18484: b"b\x05"},
         service_data={},
@@ -1155,7 +1255,7 @@ def test_ht1():
 
 def test_ht1_max_value():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="s",
         manufacturer_data={65535: b"\xff\x07"},
         service_data={},
@@ -1215,7 +1315,7 @@ def test_ht1_max_value():
 
 def test_ht1_min_value():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="s",
         manufacturer_data={0: b"\x00\x04"},
         service_data={},
@@ -1275,7 +1375,7 @@ def test_ht1_min_value():
 
 def test_ht1_long_packet_empty():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="s",
         manufacturer_data={
             76: b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba\x93"
@@ -1402,7 +1502,7 @@ def test_ht1_large_data_set():
 
 def test_tcx():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
         manufacturer_data={63752: b"\r\x00\x00"},
         service_data={},
@@ -1452,7 +1552,7 @@ def test_tcx():
 
 def test_tcx_overwriting_mfr_data():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
         manufacturer_data={59400: b"\r\x00\x00"},
         service_data={},
@@ -1499,7 +1599,7 @@ def test_tcx_overwriting_mfr_data():
         },
     )
 
-    service_info_2 = BluetoothServiceInfo(
+    service_info_2 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
         manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x03\x00"},
         service_data={},
@@ -1546,7 +1646,7 @@ def test_tcx_overwriting_mfr_data():
         },
     )
 
-    service_info_3 = BluetoothServiceInfo(
+    service_info_3 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
         manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x01\x00"},
         service_data={},
@@ -1593,7 +1693,7 @@ def test_tcx_overwriting_mfr_data():
         },
     )
 
-    service_info_3 = BluetoothServiceInfo(
+    service_info_3 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
         manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x02\x00"},
         service_data={},
@@ -1643,7 +1743,7 @@ def test_tcx_overwriting_mfr_data():
 
 def test_tc_detection_active_scans():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush TC EEFF",
         manufacturer_data={8: b"\x00\x00\x00"},
         service_data={},
@@ -1696,7 +1796,7 @@ def test_tc_detection_active_scans():
 
 def test_tc_detection_active_scans_2():
     parser = SensorPushBluetoothDeviceData()
-    service_info = BluetoothServiceInfo(
+    service_info = make_bluetooth_service_info(
         name="SensorPush TC EEFF",
         manufacturer_data={59400: b"\r\x00\x00"},
         service_data={},
