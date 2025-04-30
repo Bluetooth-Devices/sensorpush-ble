@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sensorpush-ble"
-version = "1.8.0"
+version = "1.9.0"
 description = "Parser for SensorPush BLE devices"
 authors = ["J. Nick Koston <nick@koston.org>"]
 license = "MIT"

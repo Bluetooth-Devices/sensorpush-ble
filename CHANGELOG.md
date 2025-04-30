@@ -1,6 +1,47 @@
 # CHANGELOG
 
 
+## v1.9.0 (2025-04-30)
+
+### Chores
+
+- **deps**: Bump bluetooth-data-tools from 1.28.0 to 1.28.1
+  ([#53](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/53),
+  [`7ffd46d`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/7ffd46d6481bf353bd46dba4a8c8fa9dcc7d9472))
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- **deps**: Bump habluetooth from 3.42.0 to 3.44.0
+  ([#57](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/57),
+  [`180b595`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/180b59531d5a95a8882dde32cc61af7174ab6832))
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- **deps**: Bump sphinx from 5.3.0 to 6.2.1
+  ([#54](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/54),
+  [`8aa2dbb`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/8aa2dbbe0a15c04d28f826a84b2cb27d93ffa5d4))
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- **deps**: Bump sphinx-rtd-theme from 1.3.0 to 2.0.0
+  ([#56](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/56),
+  [`b212595`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/b212595a1cd22ff62c740ad12ff9d668f927943f))
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- **deps-dev**: Bump pytest from 7.4.4 to 8.3.5
+  ([#55](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/55),
+  [`2345126`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/2345126ca33ca4bc98974ea7765cd41d8e87f073))
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+### Features
+
+- Use changed_manufacturer_data from newer bluetooth-sensor-state-data
+  ([#58](https://github.com/Bluetooth-Devices/sensorpush-ble/pull/58),
+  [`7a880b7`](https://github.com/Bluetooth-Devices/sensorpush-ble/commit/7a880b7bf5cee0218248104dc821408cae5d5e16))
+
+
 ## v1.8.0 (2025-04-28)
 
 ### Chores
