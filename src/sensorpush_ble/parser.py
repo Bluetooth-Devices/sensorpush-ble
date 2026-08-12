@@ -40,10 +40,12 @@ LOCAL_NAMES = {
 SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
 SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
 
-# Battery voltage is not advertised, it can only be read over GATT from the
-# second generation service. The characteristic holds two little endian
-# uint16s: the cell voltage in millivolts, and the temperature in degrees
-# celsius at the time of that reading.
+# Battery voltage is not advertised, it can only be read by connecting. Note
+# the base here is ...aa9 while second generation devices advertise the ...ab0
+# service above: SensorPush uses the ...aa9 base for the characteristics of
+# both generations, and only the gen 2 service itself is ...ab0. The value is
+# two little endian uint16s: the cell voltage in millivolts, and the
+# temperature in degrees celsius at the time of that reading.
 CHARACTERISTIC_BATTERY = "ef090007-11d6-42ba-93b8-9dd7ec090aa9"
 
 # SensorPush documents the devices as functional down to around 2400mV. A
@@ -55,6 +57,12 @@ BATTERY_MAX_MV = 3000
 # established, and connecting spends some of the battery we are trying to
 # measure, so poll no more than once a day.
 POLL_INTERVAL_SECONDS = 86400
+
+# Until the first reading succeeds there is nothing to show, and consumers
+# stamp the poll time even when the attempt failed, so a single failure would
+# otherwise hide the battery for a whole day. Retry sooner until we have a
+# value.
+FIRST_POLL_RETRY_SECONDS = 600
 
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
@@ -203,6 +211,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         """Initialize the SensorPush data."""
         super().__init__()
         self._device_type: str | None = None
+        self._battery_read = False
 
     def _start_update(self, service_info: BluetoothServiceInfoBleak) -> None:
         """Update from BLE advertisement data."""
@@ -256,7 +265,10 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             # the battery voltage.
             return False
 
-        return not last_poll or last_poll > POLL_INTERVAL_SECONDS
+        interval = (
+            POLL_INTERVAL_SECONDS if self._battery_read else FIRST_POLL_RETRY_SECONDS
+        )
+        return not last_poll or last_poll > interval
 
     async def async_poll(self, ble_device: BLEDevice) -> SensorUpdate:
         """Poll the device to retrieve the battery data.
@@ -271,9 +283,15 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         finally:
             await client.disconnect()
 
+        # A truncated read would otherwise surface as a struct.error, which
+        # reads like a bug in this library rather than a flaky device.
+        if len(payload) < 2:
+            raise ValueError(f"Unexpected battery payload: {payload.hex()}")
+
         # The second uint16 is the temperature at the time of the reading,
         # which we ignore as the advertisement carries a better one.
         (voltage_mv,) = struct.unpack_from("<H", payload)
+        self._battery_read = True
         self.update_predefined_sensor(
             SensorLibrary.VOLTAGE__ELECTRIC_POTENTIAL_VOLT, voltage_mv / 1000
         )

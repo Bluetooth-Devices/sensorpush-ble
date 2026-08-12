@@ -1874,6 +1874,17 @@ def make_ht1_service_info():
     )
 
 
+async def _poll(parser, payload):
+    """Run async_poll against a client that returns ``payload``."""
+    client = AsyncMock()
+    client.read_gatt_char.return_value = payload
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+    with patch(
+        "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+    ):
+        return await parser.async_poll(ble_device)
+
+
 @pytest.mark.parametrize(
     ("voltage_mv", "expected"),
     [
@@ -1901,10 +1912,28 @@ def test_poll_needed_when_never_polled():
     assert parser.poll_needed(service_info, None) is True
 
 
-def test_poll_needed_once_a_day():
+def test_poll_retried_sooner_until_the_first_reading():
+    """A failed poll still counts as a poll, so do not wait a day to retry.
+
+    The battery entities do not exist until a reading succeeds, so a single
+    failed attempt at setup time would otherwise hide them until tomorrow.
+    """
     parser = SensorPushBluetoothDeviceData()
     service_info = make_ht_w_service_info()
     parser.update(service_info)
+    assert parser.poll_needed(service_info, 300) is False
+    assert parser.poll_needed(service_info, 600) is False
+    assert parser.poll_needed(service_info, 601) is True
+    # A day is far too long to wait for the first value.
+    assert parser.poll_needed(service_info, 3600) is True
+
+
+async def test_poll_needed_once_a_day_after_a_reading():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+    await _poll(parser, b"\xb8\x0b\x15\x00")
+
     assert parser.poll_needed(service_info, 3600) is False
     assert parser.poll_needed(service_info, 86400) is False
     assert parser.poll_needed(service_info, 86401) is True
@@ -1964,14 +1993,7 @@ async def test_async_poll_half_empty():
     parser = SensorPushBluetoothDeviceData()
     parser.update(make_ht_w_service_info())
 
-    client = AsyncMock()
-    client.read_gatt_char.return_value = b"\x8c\x0a\x15\x00"  # 2700mV
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
-
-    with patch(
-        "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
-    ):
-        result = await parser.async_poll(ble_device)
+    result = await _poll(parser, b"\x8c\x0a\x15\x00")  # 2700mV
 
     assert (
         result.entity_values[DeviceKey(key="voltage", device_id=None)].native_value
@@ -2000,3 +2022,16 @@ async def test_async_poll_disconnects_on_read_failure():
         await parser.async_poll(ble_device)
 
     client.disconnect.assert_awaited_once()
+
+
+async def test_async_poll_rejects_a_truncated_read():
+    """A short read should name the device, not blame struct."""
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+
+    with pytest.raises(ValueError, match="Unexpected battery payload: b8"):
+        await _poll(parser, b"\xb8")
+
+    # Nothing was read, so we must not fall back to the once-a-day interval.
+    assert parser.poll_needed(service_info, 601) is True
