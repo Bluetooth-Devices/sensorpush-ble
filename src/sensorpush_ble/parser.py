@@ -53,11 +53,53 @@ SENSORPUSH_DATA_TYPES = {
     66: [SensorLibrary.TEMPERATURE__CELSIUS],
 }
 
+_TYPE_IDS = {model: type_id for type_id, model in SENSORPUSH_DEVICE_TYPES.items()}
+
+# Minimum length, in bytes, of the reconstructed advertisement payload
+# (2-byte manufacturer id + manufacturer data) needed to decode every field
+# of a given device type. Shorter payloads are truncated or corrupt and would
+# otherwise decode to plausible-looking but wrong values. Derived from the
+# advertised manufacturer data lengths so the two cannot drift apart; the HT1
+# is not in that table and its decoder reads up to byte 3.
+SENSORPUSH_MIN_DATA_LEN = {1: 4} | {
+    _TYPE_IDS[model]: mfg_data_len + 2
+    for mfg_data_len, model in SENSORPUSH_MANUFACTURER_DATA_LEN.items()
+}
+
+
+def _packed_fields(
+    type_id: int,
+) -> tuple[tuple[BaseSensorDescription, int, int, float, float], ...]:
+    """Precompute the (type, modulus, divisor, step, minimum) of each packed field.
+
+    The moduli and divisors only depend on the pack parameters, so they are
+    computed once at import instead of on every advertisement.
+    """
+    fields = []
+    modulus = 1
+    for (min_value, max_value, step), data_type in zip(
+        SENSORPUSH_PACK_PARAMS[type_id], SENSORPUSH_DATA_TYPES[type_id]
+    ):
+        divisor = modulus
+        modulus *= int((max_value - min_value) / step + step / 2.0) + 1
+        fields.append((data_type, modulus, divisor, step, min_value))
+    return tuple(fields)
+
+
+SENSORPUSH_PACKED_FIELDS = {
+    type_id: _packed_fields(type_id) for type_id in SENSORPUSH_PACK_PARAMS
+}
+
+
+def _device_type_id(data: bytes) -> int:
+    """Return the device type id encoded in the first byte of a v2 payload."""
+    return 64 + (data[0] >> 2)
+
 
 def _find_latest_data(
     manufacturer_data: dict[int, bytes], is_ht1: bool
 ) -> bytes | None:
-    for id_ in reversed(list(manufacturer_data)):
+    for id_ in reversed(manufacturer_data):
         data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
         if is_ht1:
             return data
@@ -84,9 +126,6 @@ def temperature_celsius_from_raw_temperature(num: int) -> float:
 
 def decode_ht1_values(mfg_data: bytes) -> dict[BaseSensorDescription, float]:
     """Decode values for HT1."""
-    if len(mfg_data) < 4:
-        return {}
-
     device_type = (mfg_data[3] & 124) >> 2
     if device_type != 1:
         _LOGGER.debug("Unsupported device type: %s", device_type)
@@ -111,58 +150,76 @@ def decode_values(
     mfg_data: bytes, device_type_id: int
 ) -> dict[BaseSensorDescription, float]:
     """Decode values."""
+    min_len = SENSORPUSH_MIN_DATA_LEN.get(device_type_id)
+    if min_len is None:
+        # A model this library does not know about is not an error condition,
+        # and every one of its advertisements would repeat the message.
+        _LOGGER.debug("SensorPush device type id %s unknown", device_type_id)
+        return {}
+
+    if len(mfg_data) < min_len:
+        _LOGGER.debug(
+            "Truncated data for SensorPush device type id %s: %s bytes, expected %s",
+            device_type_id,
+            len(mfg_data),
+            min_len,
+        )
+        return {}
 
     if device_type_id == 1:
         return decode_ht1_values(mfg_data)
 
-    pack_params = SENSORPUSH_PACK_PARAMS.get(device_type_id, None)
-    if pack_params is None:
-        _LOGGER.error("SensorPush device type id %s unknown", device_type_id)
-        return {}
+    packed_values = int.from_bytes(mfg_data[1:], "little")
 
     values = {}
-
-    packed_values = 0
-    for i in range(1, len(mfg_data)):
-        packed_values += mfg_data[i] << (8 * (i - 1))
-
-    mod = 1
-    div = 1
-    for i, block in enumerate(pack_params):
-        min_value = block[0]
-        max_value = block[1]
-        step = block[2]
-        mod *= int((max_value - min_value) / step + step / 2.0) + 1
-        value_count = int((packed_values % mod) / div)
-        data_type = SENSORPUSH_DATA_TYPES[device_type_id][i]
-        value = round(value_count * step + min_value, 2)
-        if data_type == SensorLibrary.PRESSURE__MBAR:
+    for data_type, modulus, divisor, step, min_value in SENSORPUSH_PACKED_FIELDS[
+        device_type_id
+    ]:
+        value = round(packed_values % modulus // divisor * step + min_value, 2)
+        if data_type is SensorLibrary.PRESSURE__MBAR:
             value = value / 100.0
         values[data_type] = value
-        div *= int((max_value - min_value) / step + step / 2.0) + 1
 
     return values
 
 
-def determine_device_type(
-    service_info: BluetoothServiceInfoBleak, manufacturer_data: dict[int, bytes]
-) -> str | None:
-    """Determine the device type based on the name and UUID"""
-    local_name = service_info.name
+def _is_ht1(service_info: BluetoothServiceInfoBleak) -> bool:
+    """Return True if the advertisement comes from an HT1."""
+    # The name of the HT1s seems to always be "s"
+    return (
+        service_info.name == "s"
+        and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids
+    )
 
-    if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
-        return "HT1"
 
+def _name_device_type(local_name: str) -> str | None:
+    """Return the device type advertised in the local name, if any."""
     device_type: str | None = None
     for match_name, model_name in LOCAL_NAMES.items():
         if match_name in local_name:
             device_type = model_name
-
-    if not device_type and SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids:
-        first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
-        return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
-
     return device_type
+
+
+def determine_device_type(
+    manufacturer_data: dict[int, bytes],
+    data: bytes | None,
+    name_device_type: str | None,
+) -> str | None:
+    """Determine the device type based on the payload, the name and the data length"""
+    # The model is encoded in every page 0 payload, which is more reliable than
+    # the local name (absent on passive scans, and stale on devices renamed in
+    # the app) and than the manufacturer data length (HT.w and TC.x share one).
+    if data and (
+        payload_device_type := SENSORPUSH_DEVICE_TYPES.get(_device_type_id(data))
+    ):
+        return payload_device_type
+
+    if name_device_type:
+        return name_device_type
+
+    first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
+    return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
 
 
 class SensorPushBluetoothDeviceData(BluetoothData):
@@ -174,34 +231,47 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         if not manufacturer_data:
             return
 
-        result = {}
-        device_type = determine_device_type(service_info, manufacturer_data)
-        if not device_type:
+        ht1 = _is_ht1(service_info)
+        name_device_type = None if ht1 else _name_device_type(service_info.name)
+        if (
+            not ht1
+            and not name_device_type
+            and SENSORPUSH_SERVICE_UUID_V2 not in service_info.service_uuids
+        ):
             return
 
-        is_ht1 = device_type == "HT1"
+        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+        # If len(changed_manufacturer_data) > 1 it means we switched ble adapters
+        # so we do not know which data is the latest: the advertisement can still
+        # identify the device, but we need to wait for the next update to decode
+        # values from it.
+        decodable = len(changed_manufacturer_data) == 1
+        # Scanning for the page 0 payload is the expensive part of handling an
+        # advertisement, so do it once and use the result for both the model
+        # and the values.
+        data = _find_latest_data(
+            changed_manufacturer_data if decodable else manufacturer_data, ht1
+        )
+
+        device_type = (
+            "HT1"
+            if ht1
+            else determine_device_type(manufacturer_data, data, name_device_type)
+        )
+        if not device_type:
+            return
 
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
         name = service_info.name.removeprefix("SensorPush ")
-        # The name of the HT1s seems to always be "s"
-        if not name or is_ht1:
+        if not name or ht1:
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
 
-        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
-        if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
-            # If len(changed_manufacturer_data) > 1 it means we switched
-            # ble adapters so we do not know which data is the latest
-            # and we need to wait for the next update.
+        if not (data and decodable):
             return
 
-        if data := _find_latest_data(changed_manufacturer_data, is_ht1):
-            device_type_id = 1 if is_ht1 else 64 + (data[0] >> 2)
-            if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
-                device_type = known_device_type
-            result.update(decode_values(data, device_type_id))
-
-        for data_type, value in result.items():
+        values = decode_values(data, 1 if ht1 else _device_type_id(data))
+        for data_type, value in values.items():
             self.update_predefined_sensor(data_type, value)
