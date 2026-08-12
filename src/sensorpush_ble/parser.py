@@ -9,11 +9,15 @@ MIT License applies.
 from __future__ import annotations
 
 import logging
+import struct
 
+from bleak import BleakClient
+from bleak.backends.device import BLEDevice
+from bleak_retry_connector import establish_connection
 from bluetooth_data_tools import short_address
 from bluetooth_sensor_state_data import BluetoothData
 from habluetooth import BluetoothServiceInfoBleak
-from sensor_state_data import SensorLibrary
+from sensor_state_data import SensorLibrary, SensorUpdate
 from sensor_state_data.description import BaseSensorDescription
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,6 +39,30 @@ LOCAL_NAMES = {
 
 SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
 SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
+
+# Battery voltage is not advertised, it can only be read by connecting. Note
+# the base here is ...aa9 while second generation devices advertise the ...ab0
+# service above: SensorPush uses the ...aa9 base for the characteristics of
+# both generations, and only the gen 2 service itself is ...ab0. The value is
+# two little endian uint16s: the cell voltage in millivolts, and the
+# temperature in degrees celsius at the time of that reading.
+CHARACTERISTIC_BATTERY = "ef090007-11d6-42ba-93b8-9dd7ec090aa9"
+
+# SensorPush documents the devices as functional down to around 2400mV. A
+# fresh cell measures a little over 3000mV.
+BATTERY_MIN_MV = 2400
+BATTERY_MAX_MV = 3000
+
+# The device only refreshes the battery reading when a connection is
+# established, and connecting spends some of the battery we are trying to
+# measure, so poll no more than once a day.
+POLL_INTERVAL_SECONDS = 86400
+
+# Until the first reading succeeds there is nothing to show, and consumers
+# stamp the poll time even when the attempt failed, so a single failure would
+# otherwise hide the battery for a whole day. Retry sooner until we have a
+# value.
+FIRST_POLL_RETRY_SECONDS = 600
 
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
@@ -144,6 +172,17 @@ def decode_values(
     return values
 
 
+def battery_percentage_from_millivolts(voltage_mv: int) -> int:
+    """Estimate the remaining battery percentage from the cell voltage.
+
+    This is a linear estimate over a coin cell's non-linear discharge curve, so
+    expect it to sit near full for most of the cell's life and then fall away
+    quickly towards the end.
+    """
+    percentage = (voltage_mv - BATTERY_MIN_MV) * 100 / (BATTERY_MAX_MV - BATTERY_MIN_MV)
+    return round(min(100.0, max(0.0, percentage)))
+
+
 def determine_device_type(
     service_info: BluetoothServiceInfoBleak, manufacturer_data: dict[int, bytes]
 ) -> str | None:
@@ -168,6 +207,12 @@ def determine_device_type(
 class SensorPushBluetoothDeviceData(BluetoothData):
     """Date update for SensorPush Bluetooth devices."""
 
+    def __init__(self) -> None:
+        """Initialize the SensorPush data."""
+        super().__init__()
+        self._device_type: str | None = None
+        self._battery_read = False
+
     def _start_update(self, service_info: BluetoothServiceInfoBleak) -> None:
         """Update from BLE advertisement data."""
         manufacturer_data = service_info.manufacturer_data
@@ -179,6 +224,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         if not device_type:
             return
 
+        self._device_type = device_type
         is_ht1 = device_type == "HT1"
 
         self.set_device_type(device_type)
@@ -205,3 +251,57 @@ class SensorPushBluetoothDeviceData(BluetoothData):
 
         for data_type, value in result.items():
             self.update_predefined_sensor(data_type, value)
+
+    def poll_needed(
+        self, service_info: BluetoothServiceInfoBleak, last_poll: float | None
+    ) -> bool:
+        """Return True if the device should be polled for battery data.
+
+        This is called for every advertisement, which means the device is
+        online, so it is a good moment to poll if one is due. ``last_poll`` is
+        the number of seconds since the last attempt, or None if there has not
+        been one.
+        """
+        if self._device_type is None or self._device_type == "HT1":
+            # The first generation HT1 does not expose the service that carries
+            # the battery voltage.
+            return False
+
+        interval = (
+            POLL_INTERVAL_SECONDS if self._battery_read else FIRST_POLL_RETRY_SECONDS
+        )
+        # Test against None rather than falsiness: the coarse monotonic clock
+        # has tick resolution, so an advertisement arriving in the same tick as
+        # the last poll gives exactly 0.0, which means "just polled".
+        return last_poll is None or last_poll > interval
+
+    async def async_poll(self, ble_device: BLEDevice) -> SensorUpdate:
+        """Poll the device to retrieve the battery data.
+
+        The device refreshes its battery reading whenever a connection is
+        established, so connect, read and disconnect again rather than holding
+        the connection open.
+        """
+        client = await establish_connection(BleakClient, ble_device, ble_device.address)
+        try:
+            payload = await client.read_gatt_char(CHARACTERISTIC_BATTERY)
+        finally:
+            await client.disconnect()
+
+        # A truncated read would otherwise surface as a struct.error, which
+        # reads like a bug in this library rather than a flaky device.
+        if len(payload) < 2:
+            raise ValueError(f"Unexpected battery payload: {payload.hex()}")
+
+        # The second uint16 is the temperature at the time of the reading,
+        # which we ignore as the advertisement carries a better one.
+        (voltage_mv,) = struct.unpack_from("<H", payload)
+        self._battery_read = True
+        self.update_predefined_sensor(
+            SensorLibrary.VOLTAGE__ELECTRIC_POTENTIAL_VOLT, voltage_mv / 1000
+        )
+        self.update_predefined_sensor(
+            SensorLibrary.BATTERY__PERCENTAGE,
+            battery_percentage_from_millivolts(voltage_mv),
+        )
+        return self._finish_update()
