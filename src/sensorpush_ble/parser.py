@@ -103,9 +103,19 @@ def _device_type_id(data: bytes) -> int:
 
 
 def _find_latest_data(
-    manufacturer_data: dict[int, bytes], is_ht1: bool
+    manufacturer_data: dict[int, bytes],
+    is_ht1: bool,
+    only: dict[int, bytes] | None = None,
 ) -> bytes | None:
+    """Return the payload of the most recent usable advertisement.
+
+    ``only`` restricts the search to a subset of the ids, keeping the order of
+    ``manufacturer_data``.
+    """
     for id_ in reversed(manufacturer_data):
+        if only is not None and id_ not in only:
+            continue
+
         data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
         if is_ht1:
             return data
@@ -260,17 +270,25 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             return
 
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
-        # If len(changed_manufacturer_data) > 1 it means we switched ble adapters
-        # so we do not know which data is the latest: the advertisement can still
-        # identify the device, but we need to wait for the next update to decode
-        # values from it.
-        decodable = len(changed_manufacturer_data) == 1
+        if not changed_manufacturer_data:
+            fresh = None
+        elif len(changed_manufacturer_data) == 1:
+            fresh = _find_latest_data(changed_manufacturer_data, ht1)
+        else:
+            # More than one reading arrived since the last update. The changed
+            # set is a set difference, so it says *which* ids are new but not
+            # in which order they came in; manufacturer_data does keep that
+            # order, since the id of a v2 advertisement is payload and every
+            # reading appends a new key. Walk it to pick the newest.
+            fresh = _find_latest_data(
+                manufacturer_data, ht1, only=changed_manufacturer_data
+            )
+
         # Scanning for the page 0 payload is the expensive part of handling an
         # advertisement, so do it once and use the result for both the model
-        # and the values.
-        data = _find_latest_data(
-            changed_manufacturer_data if decodable else manufacturer_data, ht1
-        )
+        # and the values. Identifying the device off a reading already seen is
+        # fine; publishing its values again is not.
+        data = fresh if fresh is not None else _find_latest_data(manufacturer_data, ht1)
 
         device_type = (
             "HT1"
@@ -288,9 +306,9 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
 
-        if not (data and decodable):
+        if fresh is None:
             return
 
-        values = decode_values(data, 1 if ht1 else _device_type_id(data))
+        values = decode_values(fresh, 1 if ht1 else _device_type_id(fresh))
         for data_type, value in values.items():
             self.update_predefined_sensor(data_type, value)

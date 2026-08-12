@@ -13,7 +13,7 @@ from sensor_state_data import (
     Units,
 )
 
-from sensorpush_ble.parser import SensorPushBluetoothDeviceData
+from sensorpush_ble.parser import SensorPushBluetoothDeviceData, _find_latest_data
 
 
 def make_bluetooth_service_info(  # noqa: PLR0913
@@ -2011,3 +2011,47 @@ def test_unidentifiable_sensorpush_advertisement_is_ignored():
     # 4 bytes of manufacturer data is not in the length table either.
     result = parser.update(_v2_service_info("", {6: b"\x00\x00\x00\x00"}))
     assert result.devices == {}
+
+
+def _temperature(result: SensorUpdate) -> float:
+    return result.entity_values[
+        DeviceKey(key="temperature", device_id=None)
+    ].native_value
+
+
+def test_newest_of_several_new_readings_is_published():
+    """Several readings between two updates must publish the newest of them."""
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(_v2_service_info("", {5380: b"\xaeD>"}))
+    assert _temperature(parser.update(_v2_service_info("", {5380: b"\xaeD>"}))) == 21.44
+
+    # Two more readings arrive before the next update. changed_manufacturer_data
+    # is a set difference and cannot order them, so the newest can only come
+    # from the arrival order manufacturer_data keeps.
+    result = parser.update(
+        _v2_service_info("", {5380: b"\xaeD>", 11012: b"\x8d\xc0>", 9476: b"\x95\x1b="})
+    )
+    assert _temperature(result) == 20.74
+
+
+def test_accumulated_readings_identify_the_device_without_values():
+    """A first advertisement carrying past readings cannot say which is newest."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(_v2_service_info("", {5380: b"\xaeD>", 11012: b"\x8d\xc0>"}))
+    assert result.devices[None].model == "HT.w"
+    assert _sensor_keys(result) == set()
+
+
+def test_find_latest_data_skips_ids_outside_the_restriction():
+    """The restriction keeps the arrival order but skips ids that are not new."""
+    readings = {5380: b"\xaeD>", 11012: b"\x8d\xc0>", 9476: b"\x95\x1b="}
+    assert (
+        _find_latest_data(readings, False, only={11012: b"\x8d\xc0>"})
+        == b"\x04+\x8d\xc0>"
+    )
+
+
+def test_advertisement_without_manufacturer_data_is_ignored():
+    """A SensorPush service uuid alone carries no reading to decode."""
+    parser = SensorPushBluetoothDeviceData()
+    assert parser.update(_v2_service_info("HT.w 0CA1", {})).devices == {}
