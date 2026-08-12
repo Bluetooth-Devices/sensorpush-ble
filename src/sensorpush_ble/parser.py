@@ -152,7 +152,9 @@ def decode_values(
     """Decode values."""
     min_len = SENSORPUSH_MIN_DATA_LEN.get(device_type_id)
     if min_len is None:
-        _LOGGER.error("SensorPush device type id %s unknown", device_type_id)
+        # A model this library does not know about is not an error condition,
+        # and every one of its advertisements would repeat the message.
+        _LOGGER.debug("SensorPush device type id %s unknown", device_type_id)
         return {}
 
     if len(mfg_data) < min_len:
