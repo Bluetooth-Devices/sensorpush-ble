@@ -1875,9 +1875,26 @@ def test_htp_xw_truncated_data_is_rejected():
 def test_tcx_truncated_data_is_rejected():
     """A short payload must not decode to plausible-looking wrong values."""
     parser = SensorPushBluetoothDeviceData()
-    # TC.x (device type id 66) needs 2 bytes of manufacturer data.
-    result = parser.update(_v2_service_info("SensorPush TC.x 0CA1", {39432: b"\x01"}))
+    # TC.x (device type id 66) packs one 15-bit field, so it needs 2 bytes
+    # after the header byte. An advertisement with no manufacturer data at all
+    # leaves only 1.
+    result = parser.update(_v2_service_info("SensorPush TC.x 0CA1", {39432: b""}))
     assert _sensor_keys(result) == set()
+
+
+def test_tcx_decodes_every_advertised_length():
+    """The guard must accept any payload wide enough to hold the value.
+
+    The TC.x support was contributed with a manufacturer data length of 2 bytes
+    and with test advertisements of 3, so the wire length is not settled. All of
+    them carry the same 15-bit reading and must decode to the same temperature.
+    """
+    for manufacturer_data in (b"\r", b"\r\x00", b"\r\x00\x00"):
+        parser = SensorPushBluetoothDeviceData()
+        result = parser.update(
+            _v2_service_info("SensorPush TC.x 0CA1", {59400: manufacturer_data})
+        )
+        assert result.entity_values[DeviceKey("temperature", None)].native_value == 22.5
 
 
 def test_full_length_data_still_decodes():

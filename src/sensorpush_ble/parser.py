@@ -53,17 +53,6 @@ SENSORPUSH_DATA_TYPES = {
     66: [SensorLibrary.TEMPERATURE__CELSIUS],
 }
 
-# Minimum length, in bytes, of the reconstructed advertisement payload
-# (2-byte manufacturer id + manufacturer data) needed to decode every field
-# of a given device type. Shorter payloads are truncated or corrupt and would
-# otherwise decode to plausible-looking but wrong values. The HT1 decoder reads
-# up to byte 3; the v2 models advertise 5, 3 and 3 bytes of manufacturer data.
-# These are stated per type id rather than derived from
-# SENSORPUSH_MANUFACTURER_DATA_LEN: that table answers the opposite question
-# (which model advertises a given length) and is ambiguous — HT.w and TC.x both
-# advertise 3 bytes — so it cannot be the source of truth for a length guard.
-SENSORPUSH_MIN_DATA_LEN = {1: 4, 64: 7, 65: 5, 66: 5}
-
 
 def _packed_fields(
     type_id: int,
@@ -86,6 +75,25 @@ def _packed_fields(
 
 SENSORPUSH_PACKED_FIELDS = {
     type_id: _packed_fields(type_id) for type_id in SENSORPUSH_PACK_PARAMS
+}
+
+# Minimum length, in bytes, of the reconstructed advertisement payload
+# (2-byte manufacturer id + manufacturer data) needed to decode every field of
+# a device type: the header byte plus the bytes the packed value space needs.
+# Shorter payloads are truncated and would otherwise decode to plausible-looking
+# but wrong values.
+#
+# Derived from the field widths rather than from an observed advertisement
+# length. SENSORPUSH_MANUFACTURER_DATA_LEN answers a different question (which
+# model advertises a given length) and its TC.x entry, 2 bytes, contradicts the
+# 3-byte TC.x advertisements the tests were written from — both come from the
+# same vendor-authored PR, so neither can be trusted as the wire length. A guard
+# built on either would silently drop every advertisement of the other shape.
+# The bit width cannot be wrong: a payload shorter than this cannot hold the
+# value. The HT1 packs its fields differently and its decoder reads up to byte 3.
+SENSORPUSH_MIN_DATA_LEN = {1: 4} | {
+    type_id: 1 + ((fields[-1][1] - 1).bit_length() + 7) // 8
+    for type_id, fields in SENSORPUSH_PACKED_FIELDS.items()
 }
 
 
