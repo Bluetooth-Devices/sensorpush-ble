@@ -26,27 +26,27 @@ Two consequences fall out of this, and both shape the parser:
   that accumulates manufacturer data per device — as HA's Bluetooth stack does
   — ends up holding one entry per advertisement it has heard. The committed
   HTP.xw capture holds 256.
-- The newest reading is therefore the most recently *added* entry, not a fixed
+- The newest reading is therefore the most recently _added_ entry, not a fixed
   key. The parser looks at `changed_manufacturer_data` and walks it in reverse.
 
 ## Payload header (v2 devices)
 
 Byte 0 of the payload is a header:
 
-| bits | meaning |
-| --- | --- |
-| 0–1 | page id |
-| 2–7 | device type index; device type id = `64 + index` |
+| bits | meaning                                          |
+| ---- | ------------------------------------------------ |
+| 0–1  | page id                                          |
+| 2–7  | device type index; device type id = `64 + index` |
 
 Verified across the committed captures: every entry of a capture yields the same
 device type id — 31 of 31 frames for the HT.w, 256 of 256 for the HTP.xw —
 including the frames that are not page 0.
 
-| device type id | model | manufacturer data bytes | payload bytes |
-| --- | --- | --- | --- |
-| 64 | HTP.xw | 5 | 7 |
-| 65 | HT.w | 3 | 5 |
-| 66 | TC.x | 2 or 3 — see below | 4 or 5 |
+| device type id | model  | manufacturer data bytes | payload bytes |
+| -------------- | ------ | ----------------------- | ------------- |
+| 64             | HTP.xw | 5                       | 7             |
+| 65             | HT.w   | 3                       | 5             |
+| 66             | TC.x   | 2 or 3 — see below      | 4 or 5        |
 
 The local name is a weaker signal than the header: it is absent on passive
 scans, and it is user-editable in the SensorPush app. The manufacturer data
@@ -56,19 +56,19 @@ length is weaker still — HT.w and TC.x can both advertise 3 bytes.
 
 Only two pages have been observed on v2 devices:
 
-| page | content |
-| --- | --- |
-| 0 | the current sensor reading; changes every advertisement |
-| 3 | a static frame, one per device |
+| page | content                                                 |
+| ---- | ------------------------------------------------------- |
+| 0    | the current sensor reading; changes every advertisement |
+| 3    | a static frame, one per device                          |
 
 Pages 1 and 2 have not been seen on a v2 capture.
 
 The page 3 frame is byte-identical across capture batches taken minutes apart,
 while page 0 changes continuously:
 
-| model | page 3 payload |
-| --- | --- |
-| HT.w | `07 2c fe 00 01` |
+| model  | page 3 payload         |
+| ------ | ---------------------- |
+| HT.w   | `07 2c fe 00 01`       |
 | HTP.xw | `03 45 ad 00 01 00 00` |
 
 Its header parses consistently with page 0 (`0x07 >> 2` → 65, `0x03 >> 2` → 64),
@@ -95,14 +95,14 @@ value_i = (packed % (count_0 * ... * count_i)) // (count_0 * ... * count_i-1)
           * step_i + min_i
 ```
 
-| model | field | min | max | step | values |
-| --- | --- | --- | --- | --- | --- |
-| HTP.xw | temperature (°C) | -40 | 140 | 0.0025 | 72001 |
-| | humidity (%) | 0 | 100 | 0.0025 | 40001 |
-| | pressure (Pa) | 30000 | 125000 | 1 | 95001 |
-| HT.w | temperature (°C) | -40 | 125 | 0.0025 | 66001 |
-| | humidity (%) | 0 | 100 | 0.0025 | 40001 |
-| TC.x | temperature (°C) | -200 | 1800 | 0.0625 | 32001 |
+| model  | field            | min   | max    | step   | values |
+| ------ | ---------------- | ----- | ------ | ------ | ------ |
+| HTP.xw | temperature (°C) | -40   | 140    | 0.0025 | 72001  |
+|        | humidity (%)     | 0     | 100    | 0.0025 | 40001  |
+|        | pressure (Pa)    | 30000 | 125000 | 1      | 95001  |
+| HT.w   | temperature (°C) | -40   | 125    | 0.0025 | 66001  |
+|        | humidity (%)     | 0     | 100    | 0.0025 | 40001  |
+| TC.x   | temperature (°C) | -200  | 1800   | 0.0625 | 32001  |
 
 Pressure is advertised in pascals and reported in hPa.
 
@@ -113,11 +113,11 @@ actually produce. Nothing constrains a corrupt or foreign advertisement to stay
 inside it, and a packed integer above the product wraps the outermost modulus
 into a plausible-looking reading rather than an obviously broken one:
 
-| model | encodable payloads | payload bits | share of the space used |
-| --- | --- | --- | --- |
-| HTP.xw | 273 613 520 207 001 | 48 | 97.2% |
-| HT.w | 2 640 106 001 | 32 | 61.5% |
-| TC.x | 32 001 | 32 (3-byte form) | 0.0007% |
+| model  | encodable payloads  | payload bits     | share of the space used |
+| ------ | ------------------- | ---------------- | ----------------------- |
+| HTP.xw | 273 613 520 207 001 | 48               | 97.2%                   |
+| HT.w   | 2 640 106 001       | 32               | 61.5%                   |
+| TC.x   | 32 001              | 32 (3-byte form) | 0.0007%                 |
 
 So a range check on the packed integer is worth far more than it looks, and
 almost entirely because of TC.x.
