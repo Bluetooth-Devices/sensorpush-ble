@@ -1842,3 +1842,146 @@ def test_tc_detection_active_scans_2():
             ),
         },
     )
+
+
+def _v2_service_info(
+    name: str, manufacturer_data: dict[int, bytes]
+) -> BluetoothServiceInfoBleak:
+    return make_bluetooth_service_info(
+        name=name,
+        manufacturer_data=manufacturer_data,
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+
+
+def _sensor_keys(result: SensorUpdate) -> set[str]:
+    return {key.key for key in result.entity_values} - {"signal_strength"}
+
+
+def test_htp_xw_truncated_data_is_rejected():
+    """A short payload must not decode to plausible-looking wrong values."""
+    parser = SensorPushBluetoothDeviceData()
+    # HTP.xw (device type id 64) needs 5 bytes of manufacturer data.
+    result = parser.update(
+        _v2_service_info("SensorPush HTP.xw 0CA1", {39424: b"\x01\x02\x03"})
+    )
+    assert _sensor_keys(result) == set()
+
+
+def test_tcx_truncated_data_is_rejected():
+    """A short payload must not decode to plausible-looking wrong values."""
+    parser = SensorPushBluetoothDeviceData()
+    # TC.x (device type id 66) needs 2 bytes of manufacturer data.
+    result = parser.update(_v2_service_info("SensorPush TC.x 0CA1", {39432: b"\x01"}))
+    assert _sensor_keys(result) == set()
+
+
+def test_full_length_data_still_decodes():
+    """The length guard must not reject well-formed payloads."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        _v2_service_info("SensorPush HTP.xw 0CA1", {39424: b"\x01\x02\x03\x04\x05"})
+    )
+    assert _sensor_keys(result) == {"temperature", "humidity", "pressure"}
+
+
+def test_model_comes_from_payload_not_local_name():
+    """The payload identifies the model more reliably than the local name."""
+    parser = SensorPushBluetoothDeviceData()
+    # Local name says HT.w, but the payload is an HTP.xw (device type id 64).
+    result = parser.update(
+        _v2_service_info("SensorPush HT.w 0CA1", {39424: b"\x01\x02\x03\x04\x05"})
+    )
+    assert result.devices[None].model == "HTP.xw"
+
+
+def test_ht_w_length_guard_follows_advertised_length():
+    """HT.w advertises 3 bytes of manufacturer data; 2 must be rejected."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x04 -> page id 0, device type id 64 + 1 = 65 (HT.w).
+    assert (
+        _sensor_keys(
+            parser.update(
+                _v2_service_info("SensorPush HT.w 0CA1", {39428: b"\x01\x02"})
+            )
+        )
+        == set()
+    )
+    assert _sensor_keys(
+        parser.update(
+            _v2_service_info("SensorPush HT.w 0CA1", {39428: b"\x01\x02\x03"})
+        )
+    ) == {"temperature", "humidity"}
+
+
+def test_unknown_device_type_id_yields_no_values():
+    """An unrecognised device type id must not decode to anything."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x0C -> page id 0, device type id 64 + 3 = 67, which is unknown.
+    result = parser.update(
+        _v2_service_info("SensorPush HT.w 0CA1", {39436: b"\x01\x02\x03\x04\x05"})
+    )
+    assert _sensor_keys(result) == set()
+
+
+def test_device_info_set_when_adapter_switched():
+    """Device info is still reported when values cannot be decoded yet."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        _v2_service_info(
+            "SensorPush HT.w 0CA1", {39428: b"\xc9\xa5F", 39429: b"\xc9\xa5G"}
+        )
+    )
+    assert result.devices[None].model == "HT.w"
+    assert _sensor_keys(result) == set()
+
+
+def test_passive_scan_identifies_unknown_manufacturer_data_length():
+    """A payload length missing from the length table is still identified."""
+    parser = SensorPushBluetoothDeviceData()
+    # 4 bytes of manufacturer data is not in SENSORPUSH_MANUFACTURER_DATA_LEN,
+    # so the length table alone cannot identify this passively scanned TC.x.
+    result = parser.update(_v2_service_info("", {63752: b"\r\x00\x00\x00"}))
+    assert result.devices[None].model == "TC.x"
+    assert _sensor_keys(result) == {"temperature"}
+
+
+def test_passive_scan_model_from_payload_when_lengths_collide():
+    """HT.w and TC.x both advertise 3 bytes; only the payload tells them apart."""
+    parser = SensorPushBluetoothDeviceData()
+    # Two entries means the adapter switched, so no values can be decoded and
+    # the model must come from the payload. Low byte 0x08 -> device type id 66.
+    result = parser.update(
+        _v2_service_info("", {63752: b"\r\x00\x00", 63753: b"\x0e\x00\x00"})
+    )
+    assert result.devices[None].model == "TC.x"
+    assert _sensor_keys(result) == set()
+
+
+def test_missing_page_zero_falls_back_to_manufacturer_data_length():
+    """Without a page 0 payload the length table still identifies the device."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x06 -> page id 2, so there is no page 0 payload to read.
+    result = parser.update(_v2_service_info("", {6: b"\x00\x00\x00"}))
+    assert result.devices[None].model == "HT.w"
+
+
+def test_non_sensorpush_advertisement_is_ignored():
+    """An advertisement with neither a known name nor the service uuid is ignored."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        make_bluetooth_service_info(
+            name="Not a sensor",
+            manufacturer_data={1: b"\x00\x00\x00"},
+            service_data={},
+            service_uuids=[],
+            address="aa:bb:cc:dd:ee:ff",
+            rssi=-60,
+            source="local",
+        )
+    )
+    assert result.devices == {}
