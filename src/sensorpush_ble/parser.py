@@ -42,12 +42,6 @@ SENSORPUSH_PACK_PARAMS = {
     66: [[-200.0, 1800.0, 0.0625]],
 }
 
-# Minimum length, in bytes, of the reconstructed advertisement payload
-# (2-byte manufacturer id + manufacturer data) needed to decode every field
-# of a given device type. Shorter payloads are truncated or corrupt and would
-# otherwise decode to plausible-looking but wrong values.
-SENSORPUSH_MIN_DATA_LEN = {1: 4, 64: 7, 65: 5, 66: 4}
-
 SENSORPUSH_DATA_TYPES = {
     1: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
     64: [
@@ -57,6 +51,43 @@ SENSORPUSH_DATA_TYPES = {
     ],
     65: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
     66: [SensorLibrary.TEMPERATURE__CELSIUS],
+}
+
+_TYPE_IDS = {model: type_id for type_id, model in SENSORPUSH_DEVICE_TYPES.items()}
+
+# Minimum length, in bytes, of the reconstructed advertisement payload
+# (2-byte manufacturer id + manufacturer data) needed to decode every field
+# of a given device type. Shorter payloads are truncated or corrupt and would
+# otherwise decode to plausible-looking but wrong values. Derived from the
+# advertised manufacturer data lengths so the two cannot drift apart; the HT1
+# is not in that table and its decoder reads up to byte 3.
+SENSORPUSH_MIN_DATA_LEN = {1: 4} | {
+    _TYPE_IDS[model]: mfg_data_len + 2
+    for mfg_data_len, model in SENSORPUSH_MANUFACTURER_DATA_LEN.items()
+}
+
+
+def _packed_fields(
+    type_id: int,
+) -> tuple[tuple[BaseSensorDescription, int, int, float, float], ...]:
+    """Precompute the (type, modulus, divisor, step, minimum) of each packed field.
+
+    The moduli and divisors only depend on the pack parameters, so they are
+    computed once at import instead of on every advertisement.
+    """
+    fields = []
+    modulus = 1
+    for (min_value, max_value, step), data_type in zip(
+        SENSORPUSH_PACK_PARAMS[type_id], SENSORPUSH_DATA_TYPES[type_id]
+    ):
+        divisor = modulus
+        modulus *= int((max_value - min_value) / step + step / 2.0) + 1
+        fields.append((data_type, modulus, divisor, step, min_value))
+    return tuple(fields)
+
+
+SENSORPUSH_PACKED_FIELDS = {
+    type_id: _packed_fields(type_id) for type_id in SENSORPUSH_PACK_PARAMS
 }
 
 
@@ -131,28 +162,16 @@ def decode_values(
     if device_type_id == 1:
         return decode_ht1_values(mfg_data)
 
-    pack_params = SENSORPUSH_PACK_PARAMS[device_type_id]
+    packed_values = int.from_bytes(mfg_data[1:], "little")
 
     values = {}
-
-    packed_values = 0
-    for i in range(1, len(mfg_data)):
-        packed_values += mfg_data[i] << (8 * (i - 1))
-
-    mod = 1
-    div = 1
-    for i, block in enumerate(pack_params):
-        min_value = block[0]
-        max_value = block[1]
-        step = block[2]
-        mod *= int((max_value - min_value) / step + step / 2.0) + 1
-        value_count = int((packed_values % mod) / div)
-        data_type = SENSORPUSH_DATA_TYPES[device_type_id][i]
-        value = round(value_count * step + min_value, 2)
-        if data_type == SensorLibrary.PRESSURE__MBAR:
+    for data_type, modulus, divisor, step, min_value in SENSORPUSH_PACKED_FIELDS[
+        device_type_id
+    ]:
+        value = round(packed_values % modulus // divisor * step + min_value, 2)
+        if data_type is SensorLibrary.PRESSURE__MBAR:
             value = value / 100.0
         values[data_type] = value
-        div *= int((max_value - min_value) / step + step / 2.0) + 1
 
     return values
 

@@ -1899,6 +1899,25 @@ def test_model_comes_from_payload_not_local_name():
     assert result.devices[None].model == "HTP.xw"
 
 
+def test_ht_w_length_guard_follows_advertised_length():
+    """HT.w advertises 3 bytes of manufacturer data; 2 must be rejected."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x04 -> page id 0, device type id 64 + 1 = 65 (HT.w).
+    assert (
+        _sensor_keys(
+            parser.update(
+                _v2_service_info("SensorPush HT.w 0CA1", {39428: b"\x01\x02"})
+            )
+        )
+        == set()
+    )
+    assert _sensor_keys(
+        parser.update(
+            _v2_service_info("SensorPush HT.w 0CA1", {39428: b"\x01\x02\x03"})
+        )
+    ) == {"temperature", "humidity"}
+
+
 def test_unknown_device_type_id_yields_no_values():
     """An unrecognised device type id must not decode to anything."""
     parser = SensorPushBluetoothDeviceData()
