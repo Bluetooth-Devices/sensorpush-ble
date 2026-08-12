@@ -2085,3 +2085,56 @@ def test_newest_raw_reading_is_published_despite_placeholder_data():
     )
     # The second AD structure, not the first, which reads 21.44.
     assert _temperature(result) == 21.23
+
+
+# An iBeacon frame as broadcast by a SensorPush device: the proximity UUID is
+# the HT1 service UUID (see HT1_DETECT_CHANGED_1, manufacturer id 76).
+IBEACON = (
+    b"\x02\x15\xef\t\x00\x00\x11\xd6B\xba"
+    + b"\x93\xb8\x9d\xd7\xec\t\n\xa9\x00\x01\tV\xc8"
+)
+
+
+def test_first_advertisement_publishes_alongside_the_ibeacon():
+    """The device's own beacon must not cost the first reading after a restart.
+
+    The changed set is empty whenever a first advertisement carries more than
+    one manufacturer id, so a beacon that is always there would hold every
+    reading back by one advertisement.
+    """
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        _v2_service_info("HT.w 0CA1", {76: IBEACON, 28932: b"\x03\xe0G"})
+    )
+    assert _temperature(result) == 22.53
+
+
+def test_ht1_reading_is_found_under_a_newer_ibeacon():
+    """An HT1 record is identified by its device type, not by being the newest."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        make_bluetooth_service_info(
+            name="s",
+            manufacturer_data={2061: b"b\x05", 76: IBEACON},
+            service_data={},
+            service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+            address="aa:bb:cc:dd:ee:ff",
+            rssi=-60,
+            source="local",
+        )
+    )
+    assert _temperature(result) == 13.9
+
+
+def test_page_0_record_of_an_unknown_model_is_not_a_reading():
+    """Only a page 0 payload of a known model can be decoded.
+
+    Apple's manufacturer id lands on page 0 and would otherwise be taken for a
+    reading, hiding the reading that follows it.
+    """
+    assert (
+        _find_latest_data({76: IBEACON, 28932: b"\x03\xe0G"}, False)
+        == b"\x04q\x03\xe0G"
+    )
+    assert _find_latest_data({76: IBEACON}, False) is None
+    assert _find_latest_data({76: IBEACON}, True) is None

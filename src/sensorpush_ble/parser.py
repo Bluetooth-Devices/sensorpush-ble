@@ -33,6 +33,13 @@ LOCAL_NAMES = {
     "TC.x": "TC.x",
 }
 
+# A SensorPush device also broadcasts an iBeacon frame under Apple's
+# manufacturer id, whose proximity UUID is the SensorPush service UUID. It is
+# never a reading, and it has to be excluded before the changed set is built:
+# that set is empty whenever a first advertisement carries more than one id, so
+# leaving the beacon in costs the first reading after every restart.
+NON_READING_MANUFACTURER_IDS = {0x004C}
+
 SENSORPUSH_SERVICE_UUID_HT1 = "ef090000-11d6-42ba-93b8-9dd7ec090aa9"
 SENSORPUSH_SERVICE_UUID_V2 = "ef090000-11d6-42ba-93b8-9dd7ec090ab0"
 
@@ -102,6 +109,19 @@ def _device_type_id(data: bytes) -> int:
     return 64 + (data[0] >> 2)
 
 
+def _is_reading(data: bytes, is_ht1: bool) -> bool:
+    """Return True if the record is a reading rather than another broadcast.
+
+    A SensorPush device does not only broadcast readings, so a record has to
+    identify itself as one before it can be decoded: an HT1 reading carries the
+    device type in its last byte, a v2 reading is page 0 of a known model.
+    """
+    if is_ht1:
+        return len(data) >= SENSORPUSH_MIN_DATA_LEN[1] and (data[3] & 124) >> 2 == 1
+
+    return not data[0] & 0x03 and _device_type_id(data) in SENSORPUSH_DEVICE_TYPES
+
+
 def _find_latest_data(
     manufacturer_data: dict[int, bytes],
     is_ht1: bool,
@@ -117,11 +137,7 @@ def _find_latest_data(
             continue
 
         data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
-        if is_ht1:
-            return data
-
-        page_id = data[0] & 0x03
-        if page_id == 0:
+        if _is_reading(data, is_ht1):
             return data
     return None
 
@@ -269,7 +285,9 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         ):
             return
 
-        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+        changed_manufacturer_data = self.changed_manufacturer_data(
+            service_info, NON_READING_MANUFACTURER_IDS
+        )
         if not changed_manufacturer_data:
             fresh = None
         else:
