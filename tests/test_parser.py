@@ -2055,3 +2055,33 @@ def test_advertisement_without_manufacturer_data_is_ignored():
     """A SensorPush service uuid alone carries no reading to decode."""
     parser = SensorPushBluetoothDeviceData()
     assert parser.update(_v2_service_info("HT.w 0CA1", {})).devices == {}
+
+
+def _raw_ad(*payloads: bytes) -> bytes:
+    """Manufacturer data AD structures, concatenated in wire order."""
+    return b"".join(bytes([len(p) + 1, 0xFF]) + p for p in payloads)
+
+
+def test_newest_raw_reading_is_published_despite_placeholder_data():
+    """On the raw path the changed set is in wire order, and may be all there is.
+
+    A scanner that supplies raw bytes is free to put anything in
+    manufacturer_data, so the newest reading has to be picked out of the parsed
+    advertisement rather than out of the arrival order of a dict that may not
+    contain it.
+    """
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        make_bluetooth_service_info(
+            name="SensorPush HT.w 0CA1",
+            manufacturer_data={1: b""},  # a placeholder, as in test_ht_w_raw
+            service_data={},
+            service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+            address="aa:bb:cc:dd:ee:ff",
+            rssi=-60,
+            source="local",
+            raw=_raw_ad(b"\x04\x15\xaeD>", b"\x04+\x8d\xc0>"),
+        )
+    )
+    # The second AD structure, not the first, which reads 21.44.
+    assert _temperature(result) == 21.23

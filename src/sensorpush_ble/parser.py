@@ -272,17 +272,25 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
         if not changed_manufacturer_data:
             fresh = None
-        elif len(changed_manufacturer_data) == 1:
-            fresh = _find_latest_data(changed_manufacturer_data, ht1)
         else:
-            # More than one reading arrived since the last update. The changed
-            # set is a set difference, so it says *which* ids are new but not
-            # in which order they came in; manufacturer_data does keep that
-            # order, since the id of a v2 advertisement is payload and every
-            # reading appends a new key. Walk it to pick the newest.
-            fresh = _find_latest_data(
-                manufacturer_data, ht1, only=changed_manufacturer_data
+            # Several readings can have arrived since the last update, so the
+            # newest has to be picked out of the changed set — but only one of
+            # the two ways that set gets built keeps the arrival order.
+            #
+            # Parsed out of the raw advertisement, it is in wire order and can
+            # be walked as is. Computed as a set difference against the last
+            # advertisement, it is not, and the order has to be recovered from
+            # manufacturer_data, which does keep it (the id of a v2 reading is
+            # payload, so every reading appends a new key).
+            #
+            # The raw path is the one whose ids can be absent from
+            # manufacturer_data, which may be a placeholder there.
+            ordered = (
+                changed_manufacturer_data
+                if changed_manufacturer_data.keys() - manufacturer_data.keys()
+                else manufacturer_data
             )
+            fresh = _find_latest_data(ordered, ht1, only=changed_manufacturer_data)
 
         # Scanning for the page 0 payload is the expensive part of handling an
         # advertisement, so do it once and use the result for both the model
