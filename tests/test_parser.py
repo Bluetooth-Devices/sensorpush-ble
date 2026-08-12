@@ -1842,3 +1842,68 @@ def test_tc_detection_active_scans_2():
             ),
         },
     )
+
+
+def _v2_service_info(name: str, manufacturer_data: dict[int, bytes]):
+    return make_bluetooth_service_info(
+        name=name,
+        manufacturer_data=manufacturer_data,
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+
+
+def _sensor_keys(result: SensorUpdate) -> set[str]:
+    return {key.key for key in result.entity_values} - {"signal_strength"}
+
+
+def test_htp_xw_truncated_data_is_rejected():
+    """A short payload must not decode to plausible-looking wrong values."""
+    parser = SensorPushBluetoothDeviceData()
+    # HTP.xw (device type id 64) needs 5 bytes of manufacturer data.
+    result = parser.update(
+        _v2_service_info("SensorPush HTP.xw 0CA1", {39424: b"\x01\x02\x03"})
+    )
+    assert _sensor_keys(result) == set()
+
+
+def test_tcx_truncated_data_is_rejected():
+    """A short payload must not decode to plausible-looking wrong values."""
+    parser = SensorPushBluetoothDeviceData()
+    # TC.x (device type id 66) needs 2 bytes of manufacturer data.
+    result = parser.update(_v2_service_info("SensorPush TC.x 0CA1", {39432: b"\x01"}))
+    assert _sensor_keys(result) == set()
+
+
+def test_full_length_data_still_decodes():
+    """The length guard must not reject well-formed payloads."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        _v2_service_info("SensorPush HTP.xw 0CA1", {39424: b"\x01\x02\x03\x04\x05"})
+    )
+    assert _sensor_keys(result) == {"temperature", "humidity", "pressure"}
+
+
+def test_model_comes_from_payload_not_local_name():
+    """The payload identifies the model more reliably than the local name."""
+    parser = SensorPushBluetoothDeviceData()
+    # Local name says HT.w, but the payload is an HTP.xw (device type id 64).
+    result = parser.update(
+        _v2_service_info("SensorPush HT.w 0CA1", {39424: b"\x01\x02\x03\x04\x05"})
+    )
+    assert result.devices[None].model == "HTP.xw"
+
+
+def test_device_info_set_when_adapter_switched():
+    """Device info is still reported when values cannot be decoded yet."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        _v2_service_info(
+            "SensorPush HT.w 0CA1", {39428: b"\xc9\xa5F", 39429: b"\xc9\xa5G"}
+        )
+    )
+    assert result.devices[None].model == "HT.w"
+    assert _sensor_keys(result) == set()

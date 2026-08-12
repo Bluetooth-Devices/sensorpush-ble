@@ -42,6 +42,12 @@ SENSORPUSH_PACK_PARAMS = {
     66: [[-200.0, 1800.0, 0.0625]],
 }
 
+# Minimum length, in bytes, of the reconstructed advertisement payload
+# (2-byte manufacturer id + manufacturer data) needed to decode every field
+# of a given device type. Shorter payloads are truncated or corrupt and would
+# otherwise decode to plausible-looking but wrong values.
+SENSORPUSH_MIN_DATA_LEN = {1: 4, 64: 7, 65: 5, 66: 4}
+
 SENSORPUSH_DATA_TYPES = {
     1: [SensorLibrary.TEMPERATURE__CELSIUS, SensorLibrary.HUMIDITY__PERCENTAGE],
     64: [
@@ -84,9 +90,6 @@ def temperature_celsius_from_raw_temperature(num: int) -> float:
 
 def decode_ht1_values(mfg_data: bytes) -> dict[BaseSensorDescription, float]:
     """Decode values for HT1."""
-    if len(mfg_data) < 4:
-        return {}
-
     device_type = (mfg_data[3] & 124) >> 2
     if device_type != 1:
         _LOGGER.debug("Unsupported device type: %s", device_type)
@@ -111,14 +114,24 @@ def decode_values(
     mfg_data: bytes, device_type_id: int
 ) -> dict[BaseSensorDescription, float]:
     """Decode values."""
+    min_len = SENSORPUSH_MIN_DATA_LEN.get(device_type_id)
+    if min_len is None:
+        _LOGGER.error("SensorPush device type id %s unknown", device_type_id)
+        return {}
+
+    if len(mfg_data) < min_len:
+        _LOGGER.debug(
+            "Truncated data for SensorPush device type id %s: %s bytes, expected %s",
+            device_type_id,
+            len(mfg_data),
+            min_len,
+        )
+        return {}
 
     if device_type_id == 1:
         return decode_ht1_values(mfg_data)
 
-    pack_params = SENSORPUSH_PACK_PARAMS.get(device_type_id, None)
-    if pack_params is None:
-        _LOGGER.error("SensorPush device type id %s unknown", device_type_id)
-        return {}
+    pack_params = SENSORPUSH_PACK_PARAMS[device_type_id]
 
     values = {}
 
@@ -174,12 +187,30 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         if not manufacturer_data:
             return
 
-        result = {}
         device_type = determine_device_type(service_info, manufacturer_data)
         if not device_type:
             return
 
         is_ht1 = device_type == "HT1"
+
+        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
+        # If len(changed_manufacturer_data) > 1 it means we switched
+        # ble adapters so we do not know which data is the latest
+        # and we need to wait for the next update to decode values.
+        data = (
+            _find_latest_data(changed_manufacturer_data, is_ht1)
+            if changed_manufacturer_data and len(changed_manufacturer_data) == 1
+            else None
+        )
+
+        result = {}
+        if data:
+            device_type_id = 1 if is_ht1 else 64 + (data[0] >> 2)
+            # The payload identifies the model more reliably than the local
+            # name, which may be absent, truncated or generic.
+            if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
+                device_type = known_device_type
+            result = decode_values(data, device_type_id)
 
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
@@ -189,19 +220,6 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         if not name or is_ht1:
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
-
-        changed_manufacturer_data = self.changed_manufacturer_data(service_info)
-        if not changed_manufacturer_data or len(changed_manufacturer_data) > 1:
-            # If len(changed_manufacturer_data) > 1 it means we switched
-            # ble adapters so we do not know which data is the latest
-            # and we need to wait for the next update.
-            return
-
-        if data := _find_latest_data(changed_manufacturer_data, is_ht1):
-            device_type_id = 1 if is_ht1 else 64 + (data[0] >> 2)
-            if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
-                device_type = known_device_type
-            result.update(decode_values(data, device_type_id))
 
         for data_type, value in result.items():
             self.update_predefined_sensor(data_type, value)
