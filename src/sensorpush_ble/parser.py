@@ -91,6 +91,11 @@ SENSORPUSH_PACKED_FIELDS = {
 }
 
 
+def _device_type_id(data: bytes) -> int:
+    """Return the device type id encoded in the first byte of a v2 payload."""
+    return 64 + (data[0] >> 2)
+
+
 def _find_latest_data(
     manufacturer_data: dict[int, bytes], is_ht1: bool
 ) -> bytes | None:
@@ -179,7 +184,7 @@ def decode_values(
 def determine_device_type(
     service_info: BluetoothServiceInfoBleak, manufacturer_data: dict[int, bytes]
 ) -> str | None:
-    """Determine the device type based on the name and UUID"""
+    """Determine the device type based on the payload, the name and the UUID"""
     local_name = service_info.name
 
     if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
@@ -190,11 +195,21 @@ def determine_device_type(
         if match_name in local_name:
             device_type = model_name
 
-    if not device_type and SENSORPUSH_SERVICE_UUID_V2 in service_info.service_uuids:
-        first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
-        return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
+    if not device_type and SENSORPUSH_SERVICE_UUID_V2 not in service_info.service_uuids:
+        return None
 
-    return device_type
+    # The model is encoded in every page 0 payload, which is more reliable than
+    # the local name (absent on passive scans, and stale on devices renamed in
+    # the app) and than the manufacturer data length (HT.w and TC.x share one).
+    if data := _find_latest_data(manufacturer_data, False):
+        if payload_device_type := SENSORPUSH_DEVICE_TYPES.get(_device_type_id(data)):
+            return payload_device_type
+
+    if device_type:
+        return device_type
+
+    first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
+    return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
 
 
 class SensorPushBluetoothDeviceData(BluetoothData):
@@ -224,12 +239,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
 
         result = {}
         if data:
-            device_type_id = 1 if is_ht1 else 64 + (data[0] >> 2)
-            # The payload identifies the model more reliably than the local
-            # name, which may be absent, truncated or generic.
-            if known_device_type := SENSORPUSH_DEVICE_TYPES.get(device_type_id):
-                device_type = known_device_type
-            result = decode_values(data, device_type_id)
+            result = decode_values(data, 1 if is_ht1 else _device_type_id(data))
 
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")

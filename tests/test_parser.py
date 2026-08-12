@@ -1938,3 +1938,50 @@ def test_device_info_set_when_adapter_switched():
     )
     assert result.devices[None].model == "HT.w"
     assert _sensor_keys(result) == set()
+
+
+def test_passive_scan_identifies_unknown_manufacturer_data_length():
+    """A payload length missing from the length table is still identified."""
+    parser = SensorPushBluetoothDeviceData()
+    # 4 bytes of manufacturer data is not in SENSORPUSH_MANUFACTURER_DATA_LEN,
+    # so the length table alone cannot identify this passively scanned TC.x.
+    result = parser.update(_v2_service_info("", {63752: b"\r\x00\x00\x00"}))
+    assert result.devices[None].model == "TC.x"
+    assert _sensor_keys(result) == {"temperature"}
+
+
+def test_passive_scan_model_from_payload_when_lengths_collide():
+    """HT.w and TC.x both advertise 3 bytes; only the payload tells them apart."""
+    parser = SensorPushBluetoothDeviceData()
+    # Two entries means the adapter switched, so no values can be decoded and
+    # the model must come from the payload. Low byte 0x08 -> device type id 66.
+    result = parser.update(
+        _v2_service_info("", {63752: b"\r\x00\x00", 63753: b"\x0e\x00\x00"})
+    )
+    assert result.devices[None].model == "TC.x"
+    assert _sensor_keys(result) == set()
+
+
+def test_missing_page_zero_falls_back_to_manufacturer_data_length():
+    """Without a page 0 payload the length table still identifies the device."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x06 -> page id 2, so there is no page 0 payload to read.
+    result = parser.update(_v2_service_info("", {6: b"\x00\x00\x00"}))
+    assert result.devices[None].model == "HT.w"
+
+
+def test_non_sensorpush_advertisement_is_ignored():
+    """An advertisement with neither a known name nor the service uuid is ignored."""
+    parser = SensorPushBluetoothDeviceData()
+    result = parser.update(
+        make_bluetooth_service_info(
+            name="Not a sensor",
+            manufacturer_data={1: b"\x00\x00\x00"},
+            service_data={},
+            service_uuids=[],
+            address="aa:bb:cc:dd:ee:ff",
+            rssi=-60,
+            source="local",
+        )
+    )
+    assert result.devices == {}
