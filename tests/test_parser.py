@@ -1844,7 +1844,9 @@ def test_tc_detection_active_scans_2():
     )
 
 
-def _v2_service_info(name: str, manufacturer_data: dict[int, bytes]):
+def _v2_service_info(
+    name: str, manufacturer_data: dict[int, bytes]
+) -> BluetoothServiceInfoBleak:
     return make_bluetooth_service_info(
         name=name,
         manufacturer_data=manufacturer_data,
@@ -1895,6 +1897,16 @@ def test_model_comes_from_payload_not_local_name():
         _v2_service_info("SensorPush HT.w 0CA1", {39424: b"\x01\x02\x03\x04\x05"})
     )
     assert result.devices[None].model == "HTP.xw"
+
+
+def test_unknown_device_type_id_yields_no_values():
+    """An unrecognised device type id must not decode to anything."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x0C -> page id 0, device type id 64 + 3 = 67, which is unknown.
+    result = parser.update(
+        _v2_service_info("SensorPush HT.w 0CA1", {39436: b"\x01\x02\x03\x04\x05"})
+    )
+    assert _sensor_keys(result) == set()
 
 
 def test_device_info_set_when_adapter_switched():
