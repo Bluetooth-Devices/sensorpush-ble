@@ -1,5 +1,7 @@
+from unittest.mock import AsyncMock, patch
 from uuid import UUID
 
+import pytest
 from bleak.backends.device import BLEDevice
 from bluetooth_data_tools import monotonic_time_coarse
 from bluetooth_sensor_state_data import DeviceClass, SensorUpdate
@@ -13,7 +15,11 @@ from sensor_state_data import (
     Units,
 )
 
-from sensorpush_ble.parser import SensorPushBluetoothDeviceData
+from sensorpush_ble.parser import (
+    CHARACTERISTIC_BATTERY,
+    SensorPushBluetoothDeviceData,
+    battery_percentage_from_millivolts,
+)
 
 
 def make_bluetooth_service_info(  # noqa: PLR0913
@@ -1842,3 +1848,155 @@ def test_tc_detection_active_scans_2():
             ),
         },
     )
+
+
+def make_ht_w_service_info():
+    return make_bluetooth_service_info(
+        name="SensorPush HT.w 0CA1",
+        manufacturer_data={39428: b"\xc9\xa5F"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+
+
+def make_ht1_service_info():
+    return make_bluetooth_service_info(
+        name="s",
+        manufacturer_data={19506: b"\xd4\x14\x0b"},
+        service_data={},
+        service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090aa9"],
+        address="aa:bb:cc:dd:ee:ff",
+        rssi=-60,
+        source="local",
+    )
+
+
+@pytest.mark.parametrize(
+    ("voltage_mv", "expected"),
+    [
+        (3100, 100),  # a fresh cell reads above the nominal maximum
+        (3000, 100),
+        (2700, 50),
+        (2400, 0),
+        (2200, 0),  # below the point the device stops working
+    ],
+)
+def test_battery_percentage_from_millivolts(voltage_mv, expected):
+    assert battery_percentage_from_millivolts(voltage_mv) == expected
+
+
+def test_poll_not_needed_before_any_advertisement():
+    """We do not know what kind of device this is yet, so do not connect."""
+    parser = SensorPushBluetoothDeviceData()
+    assert parser.poll_needed(make_ht_w_service_info(), None) is False
+
+
+def test_poll_needed_when_never_polled():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+    assert parser.poll_needed(service_info, None) is True
+
+
+def test_poll_needed_once_a_day():
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+    assert parser.poll_needed(service_info, 3600) is False
+    assert parser.poll_needed(service_info, 86400) is False
+    assert parser.poll_needed(service_info, 86401) is True
+
+
+def test_poll_not_needed_for_ht1():
+    """The first generation HT1 does not expose the battery characteristic."""
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht1_service_info()
+    parser.update(service_info)
+    assert parser.poll_needed(service_info, None) is False
+
+
+async def test_async_poll():
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(make_ht_w_service_info())
+
+    client = AsyncMock()
+    # 3000mV, 21C at the time of the reading
+    client.read_gatt_char.return_value = b"\xb8\x0b\x15\x00"
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+
+    with patch(
+        "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+    ):
+        result = await parser.async_poll(ble_device)
+
+    client.read_gatt_char.assert_awaited_once_with(CHARACTERISTIC_BATTERY)
+    # We must not hold the connection open, it costs battery.
+    client.disconnect.assert_awaited_once()
+
+    assert result.entity_descriptions[
+        DeviceKey(key="voltage", device_id=None)
+    ] == SensorDescription(
+        device_key=DeviceKey(key="voltage", device_id=None),
+        device_class=DeviceClass.VOLTAGE,
+        native_unit_of_measurement=Units.ELECTRIC_POTENTIAL_VOLT,
+    )
+    assert result.entity_descriptions[
+        DeviceKey(key="battery", device_id=None)
+    ] == SensorDescription(
+        device_key=DeviceKey(key="battery", device_id=None),
+        device_class=DeviceClass.BATTERY,
+        native_unit_of_measurement=Units.PERCENTAGE,
+    )
+    assert (
+        result.entity_values[DeviceKey(key="voltage", device_id=None)].native_value
+        == 3.0
+    )
+    assert (
+        result.entity_values[DeviceKey(key="battery", device_id=None)].native_value
+        == 100
+    )
+
+
+async def test_async_poll_half_empty():
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(make_ht_w_service_info())
+
+    client = AsyncMock()
+    client.read_gatt_char.return_value = b"\x8c\x0a\x15\x00"  # 2700mV
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+
+    with patch(
+        "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+    ):
+        result = await parser.async_poll(ble_device)
+
+    assert (
+        result.entity_values[DeviceKey(key="voltage", device_id=None)].native_value
+        == 2.7
+    )
+    assert (
+        result.entity_values[DeviceKey(key="battery", device_id=None)].native_value
+        == 50
+    )
+
+
+async def test_async_poll_disconnects_on_read_failure():
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(make_ht_w_service_info())
+
+    client = AsyncMock()
+    client.read_gatt_char.side_effect = RuntimeError("boom")
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+
+    with (
+        patch(
+            "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+        ),
+        pytest.raises(RuntimeError),
+    ):
+        await parser.async_poll(ble_device)
+
+    client.disconnect.assert_awaited_once()
