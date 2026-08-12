@@ -1601,7 +1601,7 @@ def test_tcx_overwriting_mfr_data():
 
     service_info_2 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x03\x00"},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\x10\x00\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1641,14 +1641,14 @@ def test_tcx_overwriting_mfr_data():
             DeviceKey(key="temperature", device_id=None): SensorValue(
                 device_key=DeviceKey(key="temperature", device_id=None),
                 name="Temperature",
-                native_value=311.19,
+                native_value=71.56,
             ),
         },
     )
 
     service_info_3 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x01\x00"},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\x0e\x00\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1688,14 +1688,14 @@ def test_tcx_overwriting_mfr_data():
             DeviceKey(key="temperature", device_id=None): SensorValue(
                 device_key=DeviceKey(key="temperature", device_id=None),
                 name="Temperature",
-                native_value=119.44,
+                native_value=39.56,
             ),
         },
     )
 
     service_info_3 = make_bluetooth_service_info(
         name="SensorPush TC.x EEFF",
-        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\r\x02\x00"},
+        manufacturer_data={59400: b"\r\x00\x00", 63752: b"\x0f\x00\x00"},
         service_data={},
         service_uuids=["ef090000-11d6-42ba-93b8-9dd7ec090ab0"],
         address="aa:bb:cc:dd:ee:ff",
@@ -1735,7 +1735,7 @@ def test_tcx_overwriting_mfr_data():
             DeviceKey(key="temperature", device_id=None): SensorValue(
                 device_key=DeviceKey(key="temperature", device_id=None),
                 name="Temperature",
-                native_value=215.31,
+                native_value=55.56,
             ),
         },
     )

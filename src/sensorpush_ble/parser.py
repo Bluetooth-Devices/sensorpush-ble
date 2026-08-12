@@ -53,18 +53,16 @@ SENSORPUSH_DATA_TYPES = {
     66: [SensorLibrary.TEMPERATURE__CELSIUS],
 }
 
-_TYPE_IDS = {model: type_id for type_id, model in SENSORPUSH_DEVICE_TYPES.items()}
-
 # Minimum length, in bytes, of the reconstructed advertisement payload
 # (2-byte manufacturer id + manufacturer data) needed to decode every field
 # of a given device type. Shorter payloads are truncated or corrupt and would
-# otherwise decode to plausible-looking but wrong values. Derived from the
-# advertised manufacturer data lengths so the two cannot drift apart; the HT1
-# is not in that table and its decoder reads up to byte 3.
-SENSORPUSH_MIN_DATA_LEN = {1: 4} | {
-    _TYPE_IDS[model]: mfg_data_len + 2
-    for mfg_data_len, model in SENSORPUSH_MANUFACTURER_DATA_LEN.items()
-}
+# otherwise decode to plausible-looking but wrong values. The HT1 decoder reads
+# up to byte 3; the v2 models advertise 5, 3 and 3 bytes of manufacturer data.
+# These are stated per type id rather than derived from
+# SENSORPUSH_MANUFACTURER_DATA_LEN: that table answers the opposite question
+# (which model advertises a given length) and is ambiguous — HT.w and TC.x both
+# advertise 3 bytes — so it cannot be the source of truth for a length guard.
+SENSORPUSH_MIN_DATA_LEN = {1: 4, 64: 7, 65: 5, 66: 5}
 
 
 def _packed_fields(
@@ -171,10 +169,23 @@ def decode_values(
 
     packed_values = int.from_bytes(mfg_data[1:], "little")
 
+    # The payload carries more bits than the packed fields can fill, so a value
+    # at or above the total capacity cannot have been produced by this format.
+    # Decoding it anyway would wrap the outermost modulus and hand back a
+    # plausible-looking reading: every TC.x payload above 32000 is a wrap.
+    fields = SENSORPUSH_PACKED_FIELDS[device_type_id]
+    capacity = fields[-1][1]
+    if packed_values >= capacity:
+        _LOGGER.debug(
+            "Unencodable data for SensorPush device type id %s: %s >= %s",
+            device_type_id,
+            packed_values,
+            capacity,
+        )
+        return {}
+
     values = {}
-    for data_type, modulus, divisor, step, min_value in SENSORPUSH_PACKED_FIELDS[
-        device_type_id
-    ]:
+    for data_type, modulus, divisor, step, min_value in fields:
         value = round(packed_values % modulus // divisor * step + min_value, 2)
         if data_type is SensorLibrary.PRESSURE__MBAR:
             value = value / 100.0
