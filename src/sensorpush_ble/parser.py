@@ -258,7 +258,9 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         """Return True if the device should be polled for battery data.
 
         This is called for every advertisement, which means the device is
-        online, so it is a good moment to poll if one is due.
+        online, so it is a good moment to poll if one is due. ``last_poll`` is
+        the number of seconds since the last attempt, or None if there has not
+        been one.
         """
         if self._device_type is None or self._device_type == "HT1":
             # The first generation HT1 does not expose the service that carries
@@ -268,7 +270,10 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         interval = (
             POLL_INTERVAL_SECONDS if self._battery_read else FIRST_POLL_RETRY_SECONDS
         )
-        return not last_poll or last_poll > interval
+        # Test against None rather than falsiness: the coarse monotonic clock
+        # has tick resolution, so an advertisement arriving in the same tick as
+        # the last poll gives exactly 0.0, which means "just polled".
+        return last_poll is None or last_poll > interval
 
     async def async_poll(self, ble_device: BLEDevice) -> SensorUpdate:
         """Poll the device to retrieve the battery data.

@@ -24,11 +24,12 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
-bleak = {version = ">=0.21.1", python = ">=3.10,<3.14"}
-# bleak-retry-connector carries no <3.14 marker of its own: the battery poll
-# imports it at module scope on every version this package supports. bleak
-# itself still reaches 3.14 through habluetooth, which requires it
-# unconditionally.
+# bleak and bleak-retry-connector are unconditional: the battery poll imports
+# both at module scope, so they are needed wherever this package is importable.
+# bleak previously carried a python <3.14 marker from when it was only a test
+# dependency, which left the package importable on 3.14 solely because
+# habluetooth drags bleak in anyway.
+bleak = ">=0.21.1"
 bleak-retry-connector = ">=3.4.0"
 # Documentation Dependencies
 Sphinx = {version = ">=5,<8", optional = true}

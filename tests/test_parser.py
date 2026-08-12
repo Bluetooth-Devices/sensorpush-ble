@@ -1912,6 +1912,18 @@ def test_poll_needed_when_never_polled():
     assert parser.poll_needed(service_info, None) is True
 
 
+def test_zero_seconds_since_last_poll_is_not_never_polled():
+    """0.0 means we just polled, not that we never have.
+
+    The coarse monotonic clock has tick resolution, so an advertisement landing
+    in the same tick as the poll completing yields exactly 0.0.
+    """
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+    assert parser.poll_needed(service_info, 0.0) is False
+
+
 def test_poll_retried_sooner_until_the_first_reading():
     """A failed poll still counts as a poll, so do not wait a day to retry.
 
