@@ -99,7 +99,7 @@ def _device_type_id(data: bytes) -> int:
 def _find_latest_data(
     manufacturer_data: dict[int, bytes], is_ht1: bool
 ) -> bytes | None:
-    for id_ in reversed(list(manufacturer_data)):
+    for id_ in reversed(manufacturer_data):
         data = int(id_).to_bytes(2, byteorder="little") + manufacturer_data[id_]
         if is_ht1:
             return data
@@ -181,32 +181,40 @@ def decode_values(
     return values
 
 
-def determine_device_type(
-    service_info: BluetoothServiceInfoBleak, manufacturer_data: dict[int, bytes]
-) -> str | None:
-    """Determine the device type based on the payload, the name and the UUID"""
-    local_name = service_info.name
+def _is_ht1(service_info: BluetoothServiceInfoBleak) -> bool:
+    """Return True if the advertisement comes from an HT1."""
+    # The name of the HT1s seems to always be "s"
+    return (
+        service_info.name == "s"
+        and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids
+    )
 
-    if local_name == "s" and SENSORPUSH_SERVICE_UUID_HT1 in service_info.service_uuids:
-        return "HT1"
 
+def _name_device_type(local_name: str) -> str | None:
+    """Return the device type advertised in the local name, if any."""
     device_type: str | None = None
     for match_name, model_name in LOCAL_NAMES.items():
         if match_name in local_name:
             device_type = model_name
+    return device_type
 
-    if not device_type and SENSORPUSH_SERVICE_UUID_V2 not in service_info.service_uuids:
-        return None
 
+def determine_device_type(
+    manufacturer_data: dict[int, bytes],
+    data: bytes | None,
+    name_device_type: str | None,
+) -> str | None:
+    """Determine the device type based on the payload, the name and the data length"""
     # The model is encoded in every page 0 payload, which is more reliable than
     # the local name (absent on passive scans, and stale on devices renamed in
     # the app) and than the manufacturer data length (HT.w and TC.x share one).
-    if data := _find_latest_data(manufacturer_data, False):
-        if payload_device_type := SENSORPUSH_DEVICE_TYPES.get(_device_type_id(data)):
-            return payload_device_type
+    if data and (
+        payload_device_type := SENSORPUSH_DEVICE_TYPES.get(_device_type_id(data))
+    ):
+        return payload_device_type
 
-    if device_type:
-        return device_type
+    if name_device_type:
+        return name_device_type
 
     first_manufacturer_data_value_len = len(next(iter(manufacturer_data.values())))
     return SENSORPUSH_MANUFACTURER_DATA_LEN.get(first_manufacturer_data_value_len)
@@ -221,34 +229,47 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         if not manufacturer_data:
             return
 
-        device_type = determine_device_type(service_info, manufacturer_data)
-        if not device_type:
+        ht1 = _is_ht1(service_info)
+        name_device_type = None if ht1 else _name_device_type(service_info.name)
+        if (
+            not ht1
+            and not name_device_type
+            and SENSORPUSH_SERVICE_UUID_V2 not in service_info.service_uuids
+        ):
             return
 
-        is_ht1 = device_type == "HT1"
-
         changed_manufacturer_data = self.changed_manufacturer_data(service_info)
-        # If len(changed_manufacturer_data) > 1 it means we switched
-        # ble adapters so we do not know which data is the latest
-        # and we need to wait for the next update to decode values.
-        data = (
-            _find_latest_data(changed_manufacturer_data, is_ht1)
-            if changed_manufacturer_data and len(changed_manufacturer_data) == 1
-            else None
+        # If len(changed_manufacturer_data) > 1 it means we switched ble adapters
+        # so we do not know which data is the latest: the advertisement can still
+        # identify the device, but we need to wait for the next update to decode
+        # values from it.
+        decodable = len(changed_manufacturer_data) == 1
+        # Scanning for the page 0 payload is the expensive part of handling an
+        # advertisement, so do it once and use the result for both the model
+        # and the values.
+        data = _find_latest_data(
+            changed_manufacturer_data if decodable else manufacturer_data, ht1
         )
 
-        result = {}
-        if data:
-            result = decode_values(data, 1 if is_ht1 else _device_type_id(data))
+        device_type = (
+            "HT1"
+            if ht1
+            else determine_device_type(manufacturer_data, data, name_device_type)
+        )
+        if not device_type:
+            return
 
         self.set_device_type(device_type)
         self.set_device_manufacturer("SensorPush")
 
         name = service_info.name.removeprefix("SensorPush ")
-        # The name of the HT1s seems to always be "s"
-        if not name or is_ht1:
+        if not name or ht1:
             name = f"{device_type} {short_address(service_info.address)}"
         self.set_device_name(name)
 
-        for data_type, value in result.items():
+        if not (data and decodable):
+            return
+
+        values = decode_values(data, 1 if ht1 else _device_type_id(data))
+        for data_type, value in values.items():
             self.update_predefined_sensor(data_type, value)

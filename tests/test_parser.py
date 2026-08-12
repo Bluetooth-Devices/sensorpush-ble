@@ -1985,3 +1985,12 @@ def test_non_sensorpush_advertisement_is_ignored():
         )
     )
     assert result.devices == {}
+
+
+def test_unidentifiable_sensorpush_advertisement_is_ignored():
+    """A SensorPush advertisement no source can identify yields no device."""
+    parser = SensorPushBluetoothDeviceData()
+    # Low byte 0x06 -> page id 2, so there is no page 0 payload to read, and
+    # 4 bytes of manufacturer data is not in the length table either.
+    result = parser.update(_v2_service_info("", {6: b"\x00\x00\x00\x00"}))
+    assert result.devices == {}
