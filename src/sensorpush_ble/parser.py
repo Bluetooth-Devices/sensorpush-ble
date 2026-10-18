@@ -8,11 +8,13 @@ MIT License applies.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import struct
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
 from bleak_retry_connector import establish_connection
 from bluetooth_data_tools import short_address
 from bluetooth_sensor_state_data import BluetoothData
@@ -61,8 +63,10 @@ POLL_INTERVAL_SECONDS = 86400
 # Until the first reading succeeds there is nothing to show, and consumers
 # stamp the poll time even when the attempt failed, so a single failure would
 # otherwise hide the battery for a whole day. Retry sooner until we have a
-# value.
+# value, but only for the first hour: a device that never answers falls back
+# to the daily interval rather than being reconnected every ten minutes.
 FIRST_POLL_RETRY_SECONDS = 600
+FIRST_POLL_RETRY_ATTEMPTS = 6
 
 SENSORPUSH_PACK_PARAMS = {
     64: [[-40.0, 140.0, 0.0025], [0.0, 100.0, 0.0025], [30000.0, 125000.0, 1.0]],
@@ -212,6 +216,7 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         super().__init__()
         self._device_type: str | None = None
         self._battery_read = False
+        self._poll_attempts = 0
 
     def _start_update(self, service_info: BluetoothServiceInfoBleak) -> None:
         """Update from BLE advertisement data."""
@@ -267,9 +272,10 @@ class SensorPushBluetoothDeviceData(BluetoothData):
             # the battery voltage.
             return False
 
-        interval = (
-            POLL_INTERVAL_SECONDS if self._battery_read else FIRST_POLL_RETRY_SECONDS
+        retry_sooner = (
+            not self._battery_read and self._poll_attempts < FIRST_POLL_RETRY_ATTEMPTS
         )
+        interval = FIRST_POLL_RETRY_SECONDS if retry_sooner else POLL_INTERVAL_SECONDS
         # Test against None rather than falsiness: the coarse monotonic clock
         # has tick resolution, so an advertisement arriving in the same tick as
         # the last poll gives exactly 0.0, which means "just polled".
@@ -282,11 +288,15 @@ class SensorPushBluetoothDeviceData(BluetoothData):
         established, so connect, read and disconnect again rather than holding
         the connection open.
         """
+        self._poll_attempts += 1
         client = await establish_connection(BleakClient, ble_device, ble_device.address)
         try:
             payload = await client.read_gatt_char(CHARACTERISTIC_BATTERY)
         finally:
-            await client.disconnect()
+            # A failed teardown must neither hide the read's own error nor
+            # throw away a reading we already have.
+            with contextlib.suppress(BleakError):
+                await client.disconnect()
 
         # A truncated read would otherwise surface as a struct.error, which
         # reads like a bug in this library rather than a flaky device.

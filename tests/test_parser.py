@@ -3,6 +3,7 @@ from uuid import UUID
 
 import pytest
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
 from bluetooth_data_tools import monotonic_time_coarse
 from bluetooth_sensor_state_data import DeviceClass, SensorUpdate
 from habluetooth import BluetoothServiceInfoBleak
@@ -17,6 +18,7 @@ from sensor_state_data import (
 
 from sensorpush_ble.parser import (
     CHARACTERISTIC_BATTERY,
+    FIRST_POLL_RETRY_ATTEMPTS,
     SensorPushBluetoothDeviceData,
     battery_percentage_from_millivolts,
 )
@@ -2047,3 +2049,60 @@ async def test_async_poll_rejects_a_truncated_read():
 
     # Nothing was read, so we must not fall back to the once-a-day interval.
     assert parser.poll_needed(service_info, 601) is True
+
+
+async def test_poll_retried_sooner_only_for_the_first_hour():
+    """A device that never answers falls back to the daily interval.
+
+    Otherwise it would be reconnected every ten minutes forever, spending the
+    battery we are trying to measure.
+    """
+    parser = SensorPushBluetoothDeviceData()
+    service_info = make_ht_w_service_info()
+    parser.update(service_info)
+
+    for _ in range(FIRST_POLL_RETRY_ATTEMPTS):
+        assert parser.poll_needed(service_info, 601) is True
+        with pytest.raises(ValueError):
+            await _poll(parser, b"")
+
+    assert parser.poll_needed(service_info, 601) is False
+    assert parser.poll_needed(service_info, 86401) is True
+
+
+async def test_async_poll_keeps_the_reading_when_disconnect_fails():
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(make_ht_w_service_info())
+
+    client = AsyncMock()
+    client.read_gatt_char.return_value = b"\xb8\x0b\x15\x00"
+    client.disconnect.side_effect = BleakError("already gone")
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+
+    with patch(
+        "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+    ):
+        result = await parser.async_poll(ble_device)
+
+    assert (
+        result.entity_values[DeviceKey(key="voltage", device_id=None)].native_value
+        == 3.0
+    )
+
+
+async def test_async_poll_reports_the_read_error_when_disconnect_fails():
+    parser = SensorPushBluetoothDeviceData()
+    parser.update(make_ht_w_service_info())
+
+    client = AsyncMock()
+    client.read_gatt_char.side_effect = RuntimeError("boom")
+    client.disconnect.side_effect = BleakError("already gone")
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "SensorPush HT.w 0CA1", {})
+
+    with (
+        patch(
+            "sensorpush_ble.parser.establish_connection", AsyncMock(return_value=client)
+        ),
+        pytest.raises(RuntimeError, match="boom"),
+    ):
+        await parser.async_poll(ble_device)
