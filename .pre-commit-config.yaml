@@ -29,7 +29,7 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.9.6
+    rev: v3.9.10
     hooks:
       - id: prettier
         args: ["--tab-width", "2"]
@@ -39,7 +39,7 @@ repos:
       - id: pyupgrade
         args: [--py37-plus]
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.2
+    rev: 10.0.0b1
     hooks:
       - id: isort
   - repo: https://github.com/psf/black-pre-commit-mirror
